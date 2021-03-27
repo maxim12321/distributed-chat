@@ -5,11 +5,6 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class ChatMessageCipher:
-    USER_ID_LENGTH: int
-    BYTE_ORDER: str
-    BLOCK_SIZE: int
-    user_id: int
-
     def __init__(self, user_id: int, private_key: bytes):
         self.USER_ID_LENGTH = 2
         self.BYTE_ORDER = "big"
