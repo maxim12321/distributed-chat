@@ -11,19 +11,18 @@ class ByteMessageSocket:
         self.BYTE_MESSAGE_TYPE_LENGTH = 1
         self.MESSAGE_LENGTH_LENGTH = 2
         self.PORT_ID = 8080
-        self.on_message_received = on_message_received
-        self.my_thread = threading.Thread(self.listen())
-        self.my_thread.start()
+        my_thread = threading.Thread(target=ByteMessageSocket.listen, args=(self, on_message_received))
+        my_thread.start()
 
-    def listen(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(('', int(self.PORT_ID)))
-        self.sock.listen(1)
+    def listen(self, on_message_received: callable):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(('', int(self.PORT_ID)))
+        sock.listen(1)
         while True:
-            listen_socket, address = self.sock.accept()
+            listen_socket, address = sock.accept()
             len = int.from_bytes(listen_socket.recv(2), self.BYTE_ORDER)
             message = listen_socket.recv(len)
-            self.on_message_received(address, message)
+            on_message_received(address, message)
             listen_socket.close()
 
     def send(self, ip: str, message_type: ByteMessageType, message: bytes):
