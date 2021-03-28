@@ -20,7 +20,7 @@ class ByteMessageSocket:
         sock.listen(1)
         while True:
             listen_socket, address = sock.accept()
-            len = int.from_bytes(listen_socket.recv(2), self.BYTE_ORDER)
+            len = int.from_bytes(listen_socket.recv(self.MESSAGE_LENGTH_LENGTH), self.BYTE_ORDER)
             message = listen_socket.recv(len)
             on_message_received(address, message)
             listen_socket.close()
