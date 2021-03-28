@@ -25,7 +25,7 @@ class ChatMessageCipher:
                                     message.encode("utf-8")) + padder.finalize()
         return encryptor.update(padded_data) + encryptor.finalize()
 
-    def decrypt_text(self, token: bytes):
+    def decrypt_text(self, token: bytes) -> (int, str):
         decryptor = self.cipher.decryptor()
         unpadder = padding.PKCS7(self.BLOCK_SIZE).unpadder()
         message = unpadder.update(decryptor.update(token) + decryptor.finalize()) + unpadder.finalize()

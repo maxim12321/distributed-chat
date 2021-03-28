@@ -14,7 +14,7 @@ class ByteMessageSocket:
         my_thread = threading.Thread(target=ByteMessageSocket.listen, args=(self, on_message_received))
         my_thread.start()
 
-    def listen(self, on_message_received: callable):
+    def listen(self, on_message_received: callable) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind(('', int(self.PORT_ID)))
         sock.listen(1)
@@ -25,7 +25,7 @@ class ByteMessageSocket:
             on_message_received(address, message)
             listen_socket.close()
 
-    def send(self, ip: str, message_type: ByteMessageType, message: bytes):
+    def send(self, ip: str, message_type: ByteMessageType, message: bytes) -> None:
         message = int(message_type).to_bytes(self.BYTE_MESSAGE_TYPE_LENGTH, self.BYTE_ORDER) + message
         message = sys.getsizeof(message).to_bytes(self.MESSAGE_LENGTH_LENGTH, self.BYTE_ORDER) + message
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
