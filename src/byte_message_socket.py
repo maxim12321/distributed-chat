@@ -1,5 +1,5 @@
-from src.byte_message_type import ByteMessageType
 from cryptography.hazmat.primitives import hashes, hmac
+from src.byte_message_type import ByteMessageType
 import socket
 import sys
 import threading
@@ -7,9 +7,9 @@ import threading
 
 class ByteMessageSocket:
     def __init__(self, on_message_received: callable):
-        self.BYTE_ORDER = "big"
         self.BYTE_MESSAGE_TYPE_LENGTH = 1
         self.MESSAGE_LENGTH_LENGTH = 2
+        self.BYTE_ORDER = "big"
         self.PORT_ID = 8080
         my_thread = threading.Thread(target=ByteMessageSocket.listen, args=(self, on_message_received))
         my_thread.start()
