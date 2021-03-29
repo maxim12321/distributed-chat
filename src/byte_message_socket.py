@@ -20,7 +20,7 @@ class ByteMessageSocket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((ip, int(self.PORT_ID)))
         sock.listen(1)
-        sock.settimeout(2)
+        sock.settimeout(2.14)
         while self.is_listening:
             try:
                 listen_socket, address = sock.accept()
@@ -35,7 +35,6 @@ class ByteMessageSocket:
         message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
         message = sys.getsizeof(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        send_sock.settimeout(2)
         try:
             send_sock.connect((ip, self.PORT_ID))
             send_sock.sendall(message)

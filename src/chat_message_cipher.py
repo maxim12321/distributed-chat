@@ -9,13 +9,7 @@ class ChatMessageCipher:
         self.BYTE_ORDER = "big"
         self.BLOCK_SIZE = 32
         self.user_id = user_id
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA1(),
-            length=16,
-            salt=private_key,
-            iterations=2,
-        )
-        iv = kdf.derive(private_key)
+        iv = b'0000000000000000'
         self.cipher = Cipher(algorithms.AES(private_key), modes.CBC(iv))
 
     def encrypt_text(self, message: str) -> bytes:
