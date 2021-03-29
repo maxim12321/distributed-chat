@@ -28,7 +28,7 @@ class ByteMessageSocket:
                 message = listen_socket.recv(len)
                 on_message_received(address, message)
                 listen_socket.close()
-            except:
+            except socket.timeout:
                 None
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
@@ -38,7 +38,7 @@ class ByteMessageSocket:
         try:
             send_sock.connect((ip, self.PORT_ID))
             send_sock.sendall(message)
-        except:
+        except ConnectionRefusedError:
             return False
         return True
 
