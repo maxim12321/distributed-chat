@@ -1,6 +1,7 @@
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.exceptions import InvalidSignature
 from src.byte_message_type import ByteMessageType
+import time
 import socket
 import threading
 
@@ -35,12 +36,14 @@ class ByteMessageSocket:
         message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
         message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            send_sock.connect((ip, self.PORT_ID))
-            send_sock.sendall(message)
-        except ConnectionRefusedError:
-            return False
-        return True
+        for x in range(10):
+            try:
+                send_sock.connect((ip, self.PORT_ID))
+                send_sock.sendall(message)
+                return True
+            except ConnectionRefusedError:
+                time.sleep(0.3)
+        return False
 
     def add_authentivation_code(self, message: bytes, key: bytes) -> bytes:
         h = hmac.HMAC(key, hashes.SHA1())
