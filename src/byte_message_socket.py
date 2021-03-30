@@ -13,6 +13,8 @@ class ByteMessageSocket:
         self.HMAC_BYTE_SIZE = 20
         self.BYTE_ORDER = "big"
         self.PORT_ID = 8080
+        self.MAX_CONNECTION_TRIES_COUNT = 14
+        self.WAITING_TIME_FOR_NEXT_CONNECTION = 0.313
         self.is_listening = True
         self.listening_thread = threading.Thread(target=self.listen, args=(ip, on_message_received))
         self.listening_thread.start()
@@ -36,13 +38,13 @@ class ByteMessageSocket:
         message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
         message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        for x in range(10):
+        for x in range(self.MAX_CONNECTION_TRIES_COUNT):
             try:
                 send_sock.connect((ip, self.PORT_ID))
                 send_sock.sendall(message)
                 return True
             except ConnectionRefusedError:
-                time.sleep(0.3)
+                time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
         return False
 
     def add_authentivation_code(self, message: bytes, key: bytes) -> bytes:
