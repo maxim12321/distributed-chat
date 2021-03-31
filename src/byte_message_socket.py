@@ -32,7 +32,7 @@ class ByteMessageSocket:
                 on_message_received(address, message)
                 listen_socket.close()
             except socket.timeout:
-                None
+                pass
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
         message = self.finalize_message(message_type, message)
@@ -58,7 +58,7 @@ class ByteMessageSocket:
         final_message = message + my_hash
         return final_message
 
-    def authenticate(self, message: bytes, key: bytes) -> bool:
+    def authenticate(self, message: bytes, key: bytes) -> bytes:
         h = hmac.HMAC(key, hashes.SHA1())
         old_hmac_code = message[-self.HMAC_BYTE_SIZE:]
         message = message[0:-self.HMAC_BYTE_SIZE]
@@ -66,8 +66,8 @@ class ByteMessageSocket:
         try:
             h.verify(old_hmac_code)
         except InvalidSignature:
-            return False
-        return True
+            return None
+        return message
 
     def __del__(self):
         self.is_listening = False
