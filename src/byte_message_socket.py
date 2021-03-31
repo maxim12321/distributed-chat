@@ -35,8 +35,7 @@ class ByteMessageSocket:
                 None
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
-        message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
-        message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
+        message = self.finilize_message(message_type, message)
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         for x in range(self.MAX_CONNECTION_TRIES_COUNT):
             try:
@@ -46,6 +45,11 @@ class ByteMessageSocket:
             except ConnectionRefusedError:
                 time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
         return False
+
+    def finilize_message(self, message_type: ByteMessageType, message: bytes) -> bytes:
+        message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
+        message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
+        return message
 
     def add_authentication_code(self, message: bytes, key: bytes) -> bytes:
         h = hmac.HMAC(key, hashes.SHA1())
