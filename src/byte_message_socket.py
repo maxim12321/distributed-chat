@@ -47,7 +47,7 @@ class ByteMessageSocket:
                 time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
         return False
 
-    def add_authentivation_code(self, message: bytes, key: bytes) -> bytes:
+    def add_authentication_code(self, message: bytes, key: bytes) -> bytes:
         h = hmac.HMAC(key, hashes.SHA1())
         h.update(message)
         my_hash = h.finalize()
