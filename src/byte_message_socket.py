@@ -35,7 +35,7 @@ class ByteMessageSocket:
                 None
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
-        message = self.finilize_message(message_type, message)
+        message = self.finalize_message(message_type, message)
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         for x in range(self.MAX_CONNECTION_TRIES_COUNT):
             try:
@@ -46,7 +46,7 @@ class ByteMessageSocket:
                 time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
         return False
 
-    def finilize_message(self, message_type: ByteMessageType, message: bytes) -> bytes:
+    def finalize_message(self, message_type: ByteMessageType, message: bytes) -> bytes:
         message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
         message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
         return message
