@@ -8,7 +8,7 @@ class MessageRedirection:
         for type in ByteMessageType:
             self.list_of_handlers[type] = []
 
-    def subscribe(self, type: ByteMessageType, handler: callable):
+    def subscribe(self, type: ByteMessageType, handler: callable) -> None:
         self.list_of_handlers[type].append(handler)
 
     def handle(self, address, message: bytes) -> None:
