@@ -16,6 +16,10 @@ class MessageRedirection:
         message = message[1:]
         try:
             for handler in self.list_of_handlers[type]:
-                handler(message)
+                try:
+                    handler(message)
+                except TypeError:
+                    print(f"Function {handler.__name__} has wrong arguments")
         except KeyError:
+            print(f"Wrong ByteMessageType. Got {type}")
             return
