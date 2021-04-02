@@ -4,20 +4,18 @@ from src.byte_message_type import ByteMessageType
 class MessageRedirection:
     def __init__(self):
         self.BYTE_ORDER = "big"
-        self.list_of_handlers = {}
-        for type in ByteMessageType:
-            self.list_of_handlers[type] = []
+        self.handlers = dict((type, []) for type in ByteMessageType)
 
     def subscribe(self, type: ByteMessageType, handler: callable) -> None:
-        self.list_of_handlers[type].append(handler)
+        self.handlers[type].append(handler)
 
-    def handle(self, address, message: bytes) -> None:
+    def handle(self, address: (str, int), message: bytes) -> None:
         type = int.from_bytes(message[0:1], self.BYTE_ORDER)
         message = message[1:]
         try:
-            for handler in self.list_of_handlers[type]:
+            for handler in self.handlers[type]:
                 try:
-                    handler(message)
+                    handler(address, message)
                 except TypeError:
                     print(f"Function {handler.__name__} has wrong arguments")
         except KeyError:
