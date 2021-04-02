@@ -4,10 +4,15 @@ from src.byte_message_type import ByteMessageType
 import time
 import socket
 import threading
+from enum import IntEnum
 
+class ResponseType(IntEnum):
+    RESPONSE = 0
+    MESSAGE = 1
 
 class ByteMessageSocket:
-    def __init__(self, ip: bytes, on_message_received: callable):
+    def __init__(self, ip: bytes, on_message_received: callable, on_response_received: callable):
+        self.RESPONSE_TYPE_BYTE_SIZE = 1
         self.MESSAGE_TYPE_BYTE_SIZE = 1
         self.MESSAGE_LENGTH_BYTE_SIZE = 2
         self.HMAC_BYTE_SIZE = 20
@@ -16,10 +21,10 @@ class ByteMessageSocket:
         self.MAX_CONNECTION_TRIES_COUNT = 14
         self.WAITING_TIME_FOR_NEXT_CONNECTION = 0.313
         self.is_listening = True
-        self.listening_thread = threading.Thread(target=self.listen, args=(ip, on_message_received))
+        self.listening_thread = threading.Thread(target=self.listen, args=(ip, on_message_received, on_response_received))
         self.listening_thread.start()
 
-    def listen(self, ip: bytes, on_message_received: callable) -> None:
+    def listen(self, ip: bytes, on_message_received: callable, on_response_received: callable) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((ip, self.PORT_ID))
         sock.listen(1)
@@ -27,15 +32,40 @@ class ByteMessageSocket:
         while self.is_listening:
             try:
                 listen_socket, address = sock.accept()
-                len = int.from_bytes(listen_socket.recv(self.MESSAGE_LENGTH_BYTE_SIZE), self.BYTE_ORDER)
-                message = listen_socket.recv(len)
-                on_message_received(address, message)
+                length = int.from_bytes(listen_socket.recv(self.MESSAGE_LENGTH_BYTE_SIZE), self.BYTE_ORDER)
+                message = listen_socket.recv(length)
+                response_type = int.from_bytes(message[0:self.RESPONSE_TYPE_BYTE_SIZE], self.BYTE_ORDER)
+                message = message[self.RESPONSE_TYPE_BYTE_SIZE:]
+                if response_type == ResponseType.MESSAGE:
+                    on_message_received(address, message)
+                else:
+                    answer = on_response_received(message)
+                    answer = len(answer).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + answer
+                    listen_socket.sendall(answer)
                 listen_socket.close()
             except socket.timeout:
                 pass
 
+    def send_response(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bytes:
+        message = self.finalize_message(ResponseType.RESPONSE, message_type, message)
+        send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        for x in range(self.MAX_CONNECTION_TRIES_COUNT):
+            try:
+                send_sock.connect((ip, self.PORT_ID))
+                send_sock.sendall(message)
+                send_sock.settimeout(3.14)
+                try:
+                    len = int.from_bytes(send_sock.recv(self.MESSAGE_LENGTH_BYTE_SIZE), self.BYTE_ORDER)
+                    message = send_sock.recv(len)
+                    return message
+                except socket.timeout:
+                    return b''
+            except ConnectionRefusedError:
+                time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
+        return b''
+
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
-        message = self.finalize_message(message_type, message)
+        message = self.finalize_message(ResponseType.MESSAGE, message_type, message)
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         for x in range(self.MAX_CONNECTION_TRIES_COUNT):
             try:
@@ -46,8 +76,9 @@ class ByteMessageSocket:
                 time.sleep(self.WAITING_TIME_FOR_NEXT_CONNECTION)
         return False
 
-    def finalize_message(self, message_type: ByteMessageType, message: bytes) -> bytes:
+    def finalize_message(self, response_type: ResponseType, message_type: ByteMessageType, message: bytes) -> bytes:
         message = int(message_type).to_bytes(self.MESSAGE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
+        message = int(response_type).to_bytes(self.RESPONSE_TYPE_BYTE_SIZE, self.BYTE_ORDER) + message
         message = len(message).to_bytes(self.MESSAGE_LENGTH_BYTE_SIZE, self.BYTE_ORDER) + message
         return message
 
