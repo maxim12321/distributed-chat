@@ -51,7 +51,7 @@ class ByteMessageSocket:
             except socket.timeout:
                 pass
 
-    def create_send_socket(self, ip: bytes):
+    def create_send_socket(self, ip: bytes) -> socket:
         send_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         for x in range(constants.MAX_CONNECTION_TRIES_COUNT):
             try:
