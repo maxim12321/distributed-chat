@@ -42,7 +42,7 @@ class ByteMessageSocket:
                     else:
                         answer = on_request_received(message)
                         if len(answer) != 0:
-                            answer = constants.to_bytes_message_length(len(answer)) + answer
+                            answer = constants.message_length_to_bytes(len(answer)) + answer
                             listen_socket.sendall(answer)
                 except socket.timeout:
                     pass
@@ -83,9 +83,9 @@ class ByteMessageSocket:
         return True
 
     def finalize_message(self, request_type: RequestType, message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.to_bytes_message_type(message_type) + message
-        message = constants.to_bytes_request_type(request_type) + message
-        message = constants.to_bytes_message_length(len(message)) + message
+        message = constants.message_type_to_bytes(message_type) + message
+        message = constants.request_type_to_bytes(request_type) + message
+        message = constants.message_length_to_bytes(len(message)) + message
         return message
 
     def add_authentication_code(self, message: bytes, key: bytes) -> bytes:
