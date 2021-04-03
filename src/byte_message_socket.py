@@ -1,6 +1,6 @@
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.exceptions import InvalidSignature
-from src.byte_message_type import ByteMessageType
+from byte_message_type import ByteMessageType
 import time
 import socket
 import threading
@@ -28,14 +28,14 @@ class ByteMessageSocket:
         while self.is_listening:
             try:
                 listen_socket, address = sock.accept()
-                length = int.from_bytes(listen_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE), constants.BYTE_ORDER)
+                length = constants.to_int(listen_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
                 if (length == 0):
                     listen_socket.close()
                     continue
                 listen_socket.settimeout(2.14)
                 try:
                     message = listen_socket.recv(length)
-                    request_type = int.from_bytes(message[0:constants.REQUEST_TYPE_BYTE_SIZE], constants.BYTE_ORDER)
+                    request_type = constants.to_int(message[0:constants.REQUEST_TYPE_BYTE_SIZE])
                     message = message[constants.REQUEST_TYPE_BYTE_SIZE:]
                     if request_type == RequestType.MESSAGE:
                         on_message_received(address, message)
@@ -69,7 +69,7 @@ class ByteMessageSocket:
         send_sock.sendall(message)
         send_sock.settimeout(3.14)
         try:
-            length = int.from_bytes(send_sock.recv(constants.MESSAGE_LENGTH_BYTE_SIZE), constants.BYTE_ORDER)
+            length = constants.to_int(send_sock.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
             message = send_sock.recv(length)
             return message
         except socket.timeout:
@@ -77,10 +77,10 @@ class ByteMessageSocket:
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
         message = self.finalize_message(RequestType.MESSAGE, message_type, message)
-        send_cock = self.create_send_socket(ip)
-        if send_cock == None:
+        send_sock = self.create_send_socket(ip)
+        if send_sock == None:
             return False
-        send_cock.sendall(message)
+        send_sock.sendall(message)
         return True
 
     def finalize_message(self, response_type: RequestType, message_type: ByteMessageType, message: bytes) -> bytes:
