@@ -1,4 +1,4 @@
-from src.chat_message_type import ChatMessageType
+from chat_message_type import ChatMessageType
 from byte_message_type import ByteMessageType
 import constants
 

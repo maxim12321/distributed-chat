@@ -42,7 +42,7 @@ class Chat:
     def get_user_list_message(self) -> bytes:
         user_id_list = self.message_handler.get_user_id_list()
         user_id_list_bytes = bytearray().join(user_id_list)
-        return constants.to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
+        return constants.message_type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
 
     def get_introduce_user_message(self, user_id: bytes) -> bytes:
-        return constants.to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
+        return constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
