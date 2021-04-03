@@ -11,23 +11,71 @@ class MessageSender:
         # Just for testing
         self.successors = [None] * module
 
+        self.message_counter = 0
+
+    def ping(self, node: NodeInfo) -> bool:
+        if node.node_id not in self.nodes.keys():
+            return False
+        self.message_counter += 1
+        return node.node_id in self.nodes.keys()
+
+    def notify_node(self, node: NodeInfo, possible_predecessor: NodeInfo) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        self.message_counter += 1
+        self.nodes[node.node_id].update_previous_node(possible_predecessor)
+
     def request_successor(self, node: NodeInfo, target_id: int) -> NodeInfo:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
         return self.nodes[node.node_id].find_successor(target_id)
 
     def request_next_node(self, node: NodeInfo) -> NodeInfo:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
         return self.nodes[node.node_id].get_next_node()
 
     def request_previous_node(self, node: NodeInfo) -> NodeInfo:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
         return self.nodes[node.node_id].get_previous_node()
 
     def request_preceding_finger(self, node: NodeInfo, target_id: int) -> NodeInfo:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
         return self.nodes[node.node_id].find_preceding_finger(target_id)
 
+    def request_successor_list(self, node: NodeInfo) -> list:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
+        return self.nodes[node.node_id].get_successor_list()
+
     def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        self.message_counter += 1
         self.nodes[node.node_id].propose_finger_update(node_to_update, finger_number)
 
     def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> None:
-        self.nodes[node.node_id].set_previous_node(node_to_propose)
+        if node.node_id not in self.nodes.keys():
+            return
+        self.message_counter += 1
+        self.nodes[node.node_id].update_previous_node(node_to_propose)
+
+    # Returns node, such that node.id >= target_id, used just for validating result in simulator
+    def get_real_successor(self, target_id) -> NodeInfo:
+        return self.successors[(target_id - 1) % self.module].node_info
+
+    def clear_message_counter(self) -> None:
+        self.message_counter = 0
+
+    def get_message_counter(self) -> int:
+        return self.message_counter
 
     def add_node(self, node_id: int, node) -> None:
         random_node = None
@@ -42,11 +90,15 @@ class MessageSender:
 
         self._set_successors(node_id, node)
 
-    # Returns node, such that node.id >= target_id, used just for validating result in simulator
-    def get_real_successor(self, target_id) -> NodeInfo:
-        return self.successors[(target_id - 1) % self.module].node_info
+    def remove_node(self, node_id: int) -> None:
+        self.nodes.pop(node_id)
 
-    def _set_successors(self, node_id: int, node):
+        current_id = (node_id - 1) % self.module
+        while self.successors[current_id].node_info.node_id == node_id:
+            self.successors[current_id] = self.successors[node_id]
+            current_id = (current_id - 1) % self.module
+
+    def _set_successors(self, node_id: int, node) -> None:
         node_id = (node_id - 1) % self.module
         self.successors[node_id] = node
 

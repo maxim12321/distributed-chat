@@ -5,6 +5,8 @@ from src.dht.finger import Finger
 
 class ChordNode:
     def __init__(self, m: int, node_id: int, message_sender: MessageSender):
+        self.SUCCESSOR_LIST_SIZE = 5
+
         self.m = m
         self.module = 2 ** m
         self.node_info = NodeInfo(node_id)
@@ -13,6 +15,10 @@ class ChordNode:
         self.successor: NodeInfo = None
         self.predecessor: NodeInfo = None
         self.finger_table = list()
+
+        self.successor_list = list()
+
+        self.last_updated_finger = 1
 
     # Temp, just for testing
     def get_node_info(self) -> NodeInfo:
@@ -23,13 +29,22 @@ class ChordNode:
         return self.finger_table
 
     def get_next_node(self) -> NodeInfo:
+        self._check_successor()
         return self.successor
 
     def get_previous_node(self) -> NodeInfo:
+        self._check_predecessor()
         return self.predecessor
 
-    def set_previous_node(self, predecessor: NodeInfo):
-        self.predecessor = predecessor
+    def update_previous_node(self, possible_predecessor: NodeInfo) -> None:
+        if self.predecessor.node_id == self.node_info.node_id:
+            self.predecessor = possible_predecessor
+
+        if self.is_inside_right(self.predecessor.node_id, self.node_info.node_id, possible_predecessor.node_id):
+            self.predecessor = possible_predecessor
+
+    def get_successor_list(self) -> list:
+        return self.successor_list
 
     def join(self, other_node: NodeInfo) -> None:
         self._fill_fingers_with_self()
@@ -38,7 +53,68 @@ class ChordNode:
 
         successor = self.message_sender.request_successor(other_node, self.node_info.node_id)
         self._init_finger_table(successor)
+        self._update_successor_list()
         self._update_other_nodes()
+
+    # Should be called periodically, fixes predecessor and successors
+    def stabilize(self) -> None:
+        self._check_successor()
+        self._check_possible_successor()
+
+        self._update_successor_list()
+
+        self._check_predecessor()
+
+    # Should be called periodically, fixes one finger, needs m calls to fix all fingers
+    def fix_finger(self) -> None:
+        target_id = (self.finger_table[self.last_updated_finger].start - 1) % self.module
+        self.finger_table[self.last_updated_finger].node = self.find_successor(target_id)
+
+        self.last_updated_finger += 1
+        if self.last_updated_finger == self.m:
+            self.last_updated_finger = 1
+
+    # Tries to update successor from current successor's predecessor
+    def _check_possible_successor(self) -> None:
+        possible_successor = self.message_sender.request_previous_node(self.successor)
+        if self.is_inside_right(self.node_info.node_id, self.successor.node_id, possible_successor.node_id):
+            self.successor = possible_successor
+            self.finger_table[0].node = self.successor
+
+        self.message_sender.propose_predecessor(self.successor, self.node_info)
+
+    # If successor failed, finds nearest new successor and updates successor list
+    def _check_successor(self) -> None:
+        if self.message_sender.ping(self.successor):
+            return
+
+        for successor in self.successor_list:
+            if self.message_sender.ping(successor):
+                self.successor = successor
+                self.finger_table[0].node = self.successor
+                self._update_successor_list()
+                return
+
+        self.successor = self.node_info
+        self.finger_table[0].node = self.successor
+
+    # Can be called when successor is correct and alive
+    def _update_successor_list(self) -> None:
+        next_list = self.message_sender.request_successor_list(self.successor)
+
+        if len(next_list) == self.SUCCESSOR_LIST_SIZE:
+            next_list = next_list[:-1]
+
+        self.successor_list = [self.successor]
+        self.successor_list.extend(next_list)
+
+    # If predecessor failed, sets self as a predecessor
+    def _check_predecessor(self) -> None:
+        if self.predecessor.node_id == self.successor.node_id:
+            return
+
+        if not self.message_sender.ping(self.predecessor):
+            self.predecessor = self.node_info
 
     # Initializes successor, predecessor and finger_table: creates segments [begin; end) = [id + 2^i; id + 2^{i+1})
     def _fill_fingers_with_self(self) -> None:
@@ -97,6 +173,7 @@ class ChordNode:
 
     # Returns node: NodeInfo, such that node.id < target_id <= node.successor.id
     def find_successor(self, target_id: int) -> NodeInfo:
+        self.stabilize()
         preceding_node: NodeInfo = self._find_predecessor(target_id)
 
         if preceding_node == self.node_info:
@@ -117,6 +194,9 @@ class ChordNode:
     # Returns farthest node: NodeInfo **from finger_table**, such that id < node.id <= target_id
     def find_preceding_finger(self, target_id: int) -> NodeInfo:
         for finger in reversed(self.finger_table):
+            if not self.message_sender.ping(finger.node):
+                continue
+
             if self.is_inside_right(self.node_info.node_id, target_id, finger.node.node_id):
                 return finger.node
 
