@@ -1,17 +1,18 @@
-from src.byte_message_type import ByteMessageType
+from src.chat_message_type import ChatMessageType
+from byte_message_type import ByteMessageType
+import constants
 
 
 class MessageRedirection:
     def __init__(self):
-        self.BYTE_ORDER = "big"
-        self.handlers = dict((type, []) for type in ByteMessageType)
+        self.handlers = dict((type, []) for type in ChatMessageType)
 
-    def subscribe(self, type: ByteMessageType, handler: callable) -> None:
+    def subscribe(self, type: ChatMessageType, handler: callable) -> None:
         self.handlers[type].append(handler)
 
     def handle(self, address: (str, int), message: bytes) -> None:
-        type = int.from_bytes(message[0:1], self.BYTE_ORDER)
-        message = message[1:]
+        type = ByteMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
+        message = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
         try:
             for handler in self.handlers[type]:
                 try:
