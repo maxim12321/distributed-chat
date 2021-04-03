@@ -1,4 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class TextMessage:
-    def __init__(self, sender_id: bytes, message: bytes):
-        self.sender_id = sender_id
-        self.message = message
+    sender_id: bytes
+    context: bytes
