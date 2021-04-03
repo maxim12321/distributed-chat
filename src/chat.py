@@ -24,7 +24,7 @@ class Chat:
         self.private_key = link_bytes[:constants.PRIVATE_KEY_LENGTH]
 
     def handle_message(self, message: bytes) -> bytes:
-        message_type = constants.to_chat_message_type(message[:constants.MESSAGE_TYPE_BYTE_SIZE])
+        message_type = ChatMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
         message_content = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
         if message_type == ChatMessageType.TEXT_MESSAGE:
             self.message_handler.handle_text_message(message_content)
@@ -41,9 +41,7 @@ class Chat:
 
     def get_user_list_message(self) -> bytes:
         user_id_list = self.message_handler.get_user_id_list()
-        user_id_list_bytes = bytearray()
-        for user_id in user_id_list:
-            user_id_list_bytes += user_id
+        user_id_list_bytes = bytearray().join(user_id_list)
         return constants.to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
 
     def get_introduce_user_message(self, user_id: bytes) -> bytes:
