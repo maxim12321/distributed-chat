@@ -1,7 +1,7 @@
-import os
-import base64
 from message_handler import MessageHandler
 from chat_message_type import ChatMessageType
+import os
+import base64
 import constants
 
 
@@ -10,7 +10,7 @@ class Chat:
         self.message_handler = MessageHandler()
         self.private_key = None
         self.chat_name = chat_name
-        self.chat_id = None
+        self.chat_id = os.urandom(16)
 
     def generate_private_key(self) -> None:
         self.private_key = os.urandom(constants.PRIVATE_KEY_LENGTH)
@@ -46,3 +46,6 @@ class Chat:
 
     def get_introduce_user_message(self, user_id: bytes) -> bytes:
         return constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
+
+    def get_chat_id(self) -> bytes:
+        return self.chat_id
