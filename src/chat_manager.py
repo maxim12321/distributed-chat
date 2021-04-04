@@ -9,9 +9,10 @@ class ChatManager:
     def add_chat(self, chat: Chat) -> None:
         self.chat_list[chat.get_chat_id()] = chat
 
-    def create_chat(self, chat_name: str) -> None:
-        chat = Chat(chat_name)
+    def create_chat(self, user_id: bytes, chat_name: str) -> Chat:
+        chat = Chat(user_id, chat_name)
         self.chat_list[chat.get_chat_id()] = chat
+        return chat
 
     def handle_message(self, message: bytes) -> None:
         chat_id = message[:constants.ID_LENGTH]

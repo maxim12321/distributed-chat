@@ -6,8 +6,9 @@ import constants
 
 
 class Chat:
-    def __init__(self, chat_name: str):
+    def __init__(self, creator_id: bytes, chat_name: str):
         self.message_handler = MessageHandler()
+        self.message_handler.handle_introduce_user(creator_id)
         self.private_key = None
         self.chat_name = chat_name
         self.chat_id = os.urandom(16)
