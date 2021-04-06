@@ -25,6 +25,11 @@ class ReplicationManager:
         self.info.add_info(key, self.REPLICATION_COEFFICIENT)
         self.data.append_data(key, data)
 
+    def drop_data_with_smaller_id(self, data_id: int):
+        keys_to_remove = self.info.get_keys_with_smaller_id(data_id)
+        self.info.remove_keys(keys_to_remove)
+        self.data.remove_data(keys_to_remove)
+
     def get_info_to_update(self, new_info: ReplicationInfo) -> ReplicationInfo:
         return self.info.get_info_to_update(new_info)
 

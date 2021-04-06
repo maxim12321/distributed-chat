@@ -40,5 +40,13 @@ class ReplicationInfo:
         keys_to_remove = [key for key, value in self.info.items() if value == 0]
         return list(keys_to_remove)
 
+    def get_keys_with_smaller_id(self, data_id: int) -> List[InfoKey]:
+        keys: List[InfoKey] = list()
+
+        for key in self.info.keys():
+            if key.data_id <= data_id:
+                keys.append(key)
+        return keys
+
     def __str__(self) -> str:
         return f"ReplicationInfo:{self.info}"
