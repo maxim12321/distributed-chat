@@ -1,7 +1,11 @@
-from typing import List
+from typing import List, Optional
 from src.dht.node_info import NodeInfo
 from src.dht.message_sender import MessageSender
 from src.dht.finger import Finger
+from src.replication.info_key import InfoKey
+from src.replication.replication_info import ReplicationInfo
+from src.replication.replication_data import ReplicationData
+from src.replication.replication_manager import ReplicationManager
 
 
 class ChordNode:
@@ -21,6 +25,8 @@ class ChordNode:
 
         self.last_updated_finger = 1
 
+        self.replication_manager = ReplicationManager()
+
     # Temp, just for testing
     def get_node_info(self) -> NodeInfo:
         return self.node_info
@@ -37,10 +43,55 @@ class ChordNode:
         self._check_predecessor()
         return self.predecessor
 
+    def get_replication_info(self) -> ReplicationInfo:
+        return self.replication_manager.get_info()
+
+    def get_data_by_keys(self, keys: List[InfoKey]) -> ReplicationData:
+        return self.replication_manager.get_data_by_keys(keys)
+
+    def get_value(self, key: InfoKey) -> Optional[bytes]:
+        return self.replication_manager.get_single_data(key)
+
+    def get_all_values(self, key: InfoKey) -> Optional[List[bytes]]:
+        return self.replication_manager.get_data(key)
+
+    def set_value(self, key: InfoKey, value: bytes) -> None:
+        self.replication_manager.set_data(key, value)
+        self._push_key_replication(key)
+
+    def append_value(self, key: InfoKey, value: bytes) -> None:
+        self.replication_manager.append_data(key, value)
+        self._push_key_replication(key)
+
+    # Finds replication for a given key and pushes updates to the successor
+    def _push_key_replication(self, key: InfoKey) -> None:
+        info, data = self.replication_manager.get_key_replication(key)
+
+        self._check_successor()
+        self.message_sender.update_replication(self.successor, info, data)
+
+    def update_replication_info(self, new_info: ReplicationInfo) -> None:
+        new_info = self.replication_manager.update_info(new_info)
+
+        # If some info has changed, push this changes to the successor
+        if new_info.get_size() > 0:
+            self.message_sender.update_replication_info(self.successor, new_info)
+
+    def update_replication(self, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+        new_info, new_data = self.replication_manager.update(new_info, new_data)
+
+        if new_info.get_size() > 0:
+            self.message_sender.update_replication(self.successor, new_info, new_data)
+
+    # possible_predecessor is proposed as a self.predecessor
     def update_previous_node(self, possible_predecessor: NodeInfo) -> None:
+        self._check_predecessor()
+
+        # If self has no predecessor, update it
         if self.predecessor.node_id == self.node_info.node_id:
             self._set_predecessor(possible_predecessor)
 
+        # If possible predecessor is better than current one, update it
         if self.is_inside_right(self.predecessor.node_id, self.node_info.node_id, possible_predecessor.node_id):
             self._set_predecessor(possible_predecessor)
 
@@ -92,6 +143,7 @@ class ChordNode:
             if self.message_sender.ping(successor):
                 self._set_successor(successor)
                 self._update_successor_list()
+                self.message_sender.propose_predecessor(successor, self.node_info)
                 return
 
         self._set_successor(self.node_info)
@@ -155,6 +207,7 @@ class ChordNode:
     # Sets fingers, assuming that successor is self.successor in the ring
     def _init_finger_table(self, successor: NodeInfo) -> None:
         self._set_successor(successor)
+        self._replicate_from_successor()
 
         last_successor_id = successor.node_id
         for i in range(1, self.m):
@@ -170,6 +223,15 @@ class ChordNode:
 
         self._set_predecessor(self.message_sender.request_previous_node(successor))
         self.message_sender.propose_predecessor(successor, self.node_info)
+
+    # Gets data to replicate from a successor, supposing self.successor is alive and correct, and updates successor info
+    def _replicate_from_successor(self) -> None:
+        info_to_update, data_to_update = self._request_replication_updates(self.successor)
+
+        info_to_update, data_to_update = self.replication_manager.set(info_to_update, data_to_update)
+        self.replication_manager.drop_data_with_id_inside(self.node_info.node_id, self.successor.node_id)
+
+        self.message_sender.update_replication_info(self.successor, info_to_update)
 
     # Returns node: NodeInfo, such that node.id < target_id <= node.successor.id
     def find_successor(self, target_id: int) -> NodeInfo:
@@ -206,8 +268,38 @@ class ChordNode:
         self.successor = successor
         self.finger_table[0].node = successor
 
+    # Sets predecessor and updates replication, if needed
     def _set_predecessor(self, predecessor: NodeInfo) -> None:
+        # If predecessor is not better (predecessor failed), update replication info for data from predecessor
+        if not self.is_inside_left(self.predecessor.node_id, self.node_info.node_id, predecessor.node_id):
+            info, data = self.replication_manager.move_all_from_predecessor()
+            self._check_successor()
+            self.message_sender.update_replication(self.successor, info, data)
+
         self.predecessor = predecessor
+
+        if predecessor.node_id != self.node_info.node_id:
+            self._update_replication_from_predecessor()
+
+    # Requests replication data from successor, pushes updates to the successor
+    def _update_replication_from_predecessor(self) -> None:
+        info_to_update, data_to_update = self._request_replication_updates(self.predecessor)
+
+        info_to_update, data_to_update = self.replication_manager.update(info_to_update, data_to_update)
+        self._check_successor()
+        self.message_sender.update_replication(self.successor, info_to_update, data_to_update)
+
+    # Gets all replication from given node, drops unnecessary and returns
+    def _request_replication_updates(self, node: NodeInfo) -> (ReplicationInfo, ReplicationData):
+        new_info = self.message_sender.request_replication_info(node)
+        info_to_update = self.replication_manager.get_info_to_update(new_info)
+
+        # Remove keys, for that self is not a successor
+        keys_to_remove = info_to_update.get_keys_with_id_inside(self.node_info.node_id, self.successor.node_id)
+        info_to_update.remove_keys(keys_to_remove)
+
+        data_to_update = self.message_sender.request_data_by_keys(node, info_to_update.get_keys())
+        return info_to_update, data_to_update
 
     # Returns true, if left < value <= right; is_inside_right(x, x, a) -> True, 'cause (x; x] is whole circle
     @staticmethod

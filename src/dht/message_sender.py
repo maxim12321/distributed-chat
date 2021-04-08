@@ -1,5 +1,9 @@
 import random
+from typing import List, Optional
 from src.dht.node_info import NodeInfo
+from src.replication.info_key import InfoKey
+from src.replication.replication_info import ReplicationInfo
+from src.replication.replication_data import ReplicationData
 
 
 # Stores all nodes, makes direct function call to a node, instead of sending message over TCP
@@ -25,31 +29,31 @@ class MessageSender:
         self.message_counter += 1
         self.nodes[node.node_id].update_previous_node(possible_predecessor)
 
-    def request_successor(self, node: NodeInfo, target_id: int) -> NodeInfo:
+    def request_successor(self, node: NodeInfo, target_id: int) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
         self.message_counter += 1
         return self.nodes[node.node_id].find_successor(target_id)
 
-    def request_next_node(self, node: NodeInfo) -> NodeInfo:
+    def request_next_node(self, node: NodeInfo) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
         self.message_counter += 1
         return self.nodes[node.node_id].get_next_node()
 
-    def request_previous_node(self, node: NodeInfo) -> NodeInfo:
+    def request_previous_node(self, node: NodeInfo) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
         self.message_counter += 1
         return self.nodes[node.node_id].get_previous_node()
 
-    def request_preceding_finger(self, node: NodeInfo, target_id: int) -> NodeInfo:
+    def request_preceding_finger(self, node: NodeInfo, target_id: int) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
         self.message_counter += 1
         return self.nodes[node.node_id].find_preceding_finger(target_id)
 
-    def request_successor_list(self, node: NodeInfo) -> list:
+    def request_successor_list(self, node: NodeInfo) -> Optional[List[NodeInfo]]:
         if node.node_id not in self.nodes.keys():
             return None
         self.message_counter += 1
@@ -66,6 +70,30 @@ class MessageSender:
             return
         self.message_counter += 1
         self.nodes[node.node_id].update_previous_node(node_to_propose)
+
+    def request_replication_info(self, node: NodeInfo) -> Optional[ReplicationInfo]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
+        return self.nodes[node.node_id].get_replication_info()
+
+    def request_data_by_keys(self, node: NodeInfo, keys: List[InfoKey]) -> Optional[ReplicationData]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.message_counter += 1
+        return self.nodes[node.node_id].get_data_by_keys(keys)
+
+    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        self.message_counter += 1
+        return self.nodes[node.node_id].update_replication_info(new_info)
+
+    def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        self.message_counter += 1
+        return self.nodes[node.node_id].update_replication(new_info, new_data)
 
     # Returns node, such that node.id >= target_id, used just for validating result in simulator
     def get_real_successor(self, target_id) -> NodeInfo:
@@ -84,8 +112,6 @@ class MessageSender:
 
         self.nodes[node_id] = node
 
-        print("Trying to join")
-        print(random_node)
         node.join(random_node)
 
         self._set_successors(node_id, node)
