@@ -1,15 +1,8 @@
 from typing import Optional, Callable, Dict, Any
 import constants
 import json_decoder
-import base64
 import copy
 import json
-
-
-def as_complex(dct):
-    if "private_key" in dct:
-        return base64.b64decode(dct["private_key"])
-    return dct
 
 
 class Preferences:
