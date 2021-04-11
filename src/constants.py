@@ -49,3 +49,7 @@ def bytes_to_string(data: bytes) -> str:
 
 def string_to_bytes(data: bytes) -> bytes:
     return base64.b64decode(data)
+
+
+def bytes_to_dict(data: bytes):
+    return {"__bytes__": True, "bytes": bytes_to_string(data)}

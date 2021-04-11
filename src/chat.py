@@ -17,9 +17,11 @@ class Chat:
         self.chat_id: Optional[int] = None
 
     def __iter__(self) -> Generator[str, Any, None]:
-        yield from {"chat_name": self.chat_name,
-                    "private_key": {"__bytes__": True, "bytes": constants.bytes_to_string(self.private_key)},
-                    "message_handler": dict(self.message_handler)}.items()
+        yield from {
+            "chat_name": self.chat_name,
+            "private_key": constants.bytes_to_dict(self.private_key),
+            "message_handler": dict(self.message_handler)
+        }.items()
 
     def create(self, chat_name: str):
         self.chat_id = constants.random_int(constants.ID_LENGTH)

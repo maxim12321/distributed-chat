@@ -10,19 +10,20 @@ class Preferences:
         self.FILE_NAME = "../preferences.json"
 
     def _load_json_file(self, object_hook: Optional[Callable[[Dict[Any, Any]], Any]] = None) -> dict:
-        file = open(self.FILE_NAME, "a+")
-        file.seek(0)
-        data = file.read()
-        dict_data = dict()
-        if len(data) != 0:
-            dict_data = json.loads(data, object_hook=object_hook)
-        file.close()
-        return dict_data
+        try:
+            with open(self.FILE_NAME, "r") as file:
+                data = file.read()
+                dict_data = dict()
+                if len(data) != 0:
+                    dict_data = json.loads(data, object_hook=object_hook)
+                file.close()
+                return dict_data
+        except FileNotFoundError:
+            return dict()
 
     def _save_dict_in_file(self, data_dict: dict) -> None:
-        file = open(self.FILE_NAME, "w")
-        json.dump(data_dict, file, indent=constants.INDENT)
-        file.close()
+        with open(self.FILE_NAME, "w+") as file:
+            json.dump(data_dict, file, indent=constants.INDENT)
 
     def _delete_old_object(self, data_dict: dict, tag_array: str, tag_object: str) -> None:
         for index, list_value in enumerate(data_dict[tag_array]):
@@ -62,7 +63,7 @@ class Preferences:
         data_dict = self._load_json_file()
         serialized_object = self._get_serialized_object(object_to_save)
 
-        if tag_array not in list(data_dict.keys()):
+        if tag_array not in data_dict.keys():
             data_dict[tag_array] = list()
         self._delete_old_object(data_dict, tag_array, tag_object)
         data_dict[tag_array].append({tag_object: serialized_object})
