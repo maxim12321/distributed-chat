@@ -16,7 +16,6 @@ class Preferences:
                 dict_data = dict()
                 if len(data) != 0:
                     dict_data = json.loads(data, object_hook=object_hook)
-                file.close()
                 return dict_data
         except FileNotFoundError:
             return dict()
