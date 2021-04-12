@@ -20,7 +20,7 @@ class Preferences:
         except FileNotFoundError:
             return dict()
 
-    def _save_dict_in_file(self, data_dict: dict) -> None:
+    def _save_dict_to_file(self, data_dict: dict) -> None:
         with open(self.FILE_NAME, "w+") as file:
             json.dump(data_dict, file, indent=constants.INDENT)
 
@@ -67,7 +67,7 @@ class Preferences:
         self._delete_old_object(data_dict, tag_array, tag_object)
         data_dict[tag_array].append({tag_object: serialized_object})
 
-        self._save_dict_in_file(data_dict)
+        self._save_dict_to_file(data_dict)
 
     def save_object(self, tag: str, object_to_save: object) -> None:
         data_dict = self._load_json_file()
@@ -77,4 +77,4 @@ class Preferences:
             data_dict.pop(tag)
         data_dict[tag] = serialized_object
 
-        self._save_dict_in_file(data_dict)
+        self._save_dict_to_file(data_dict)
