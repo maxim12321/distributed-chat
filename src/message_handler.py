@@ -1,10 +1,11 @@
+from deserializable import Deserializable
 from text_message import TextMessage
 from user_info import UserInfo
 from typing import List
 import constants
 
 
-class MessageHandler:
+class MessageHandler(Deserializable):
     def __init__(self):
         self.users: List[UserInfo] = []
         self.messages: List[TextMessage] = []
@@ -16,11 +17,11 @@ class MessageHandler:
         }.items()
 
     def load_from_dict(self, data: dict) -> None:
-        messages_dict = data["message_list"]
-        user_info_dict = data["user_info_list"]
-        for message in messages_dict:
+        self.messages.clear()
+        self.users.clear()
+        for message in data["message_list"]:
             self.messages.append(TextMessage(message["sender_id"], message["context"]))
-        for user_info in user_info_dict:
+        for user_info in data["user_info_list"]:
             self.users.append(UserInfo(user_info["user_id"]))
 
     def handle_text_message(self, message: bytes) -> None:

@@ -1,4 +1,5 @@
 from typing import Optional, Callable, Dict, Any
+from deserializable import Deserializable
 import constants
 import json_decoder
 import copy
@@ -12,22 +13,19 @@ class Preferences:
     def _load_json_file(self, object_hook: Optional[Callable[[Dict[Any, Any]], Any]] = None) -> dict:
         try:
             with open(self.FILE_NAME, "r") as file:
-                data = file.read()
-                dict_data = dict()
-                if len(data) != 0:
-                    dict_data = json.loads(data, object_hook=object_hook)
-                return dict_data
-        except FileNotFoundError:
+                data = json.loads(file.read(), object_hook=object_hook)
+                return data
+        except (FileNotFoundError, json.JSONDecodeError):
             return dict()
 
     def _save_dict_to_file(self, data_dict: dict) -> None:
         with open(self.FILE_NAME, "w+") as file:
             json.dump(data_dict, file, indent=constants.INDENT)
 
-    def _delete_old_object(self, data_dict: dict, tag_array: str, tag_object: str) -> None:
-        for index, list_value in enumerate(data_dict[tag_array]):
-            if list(list_value.keys())[0] == tag_object:
-                data_dict[tag_array].pop(index)
+    def _delete_old_object(self, data_dict: dict, array_tag: str, object_tag: str) -> None:
+        for index, list_value in enumerate(data_dict[array_tag]):
+            if list(list_value.keys())[0] == object_tag:
+                data_dict[array_tag].pop(index)
                 break
 
     def _is_primitive(self, obj: object) -> bool:
@@ -45,27 +43,26 @@ class Preferences:
         dict_data = self._load_json_file()
         return dict_data[tag]
 
-    def load_object(self, tag: str, load_object: object) -> None:
+    def load_object(self, tag: str, load_object: Deserializable) -> None:
         dict_data = self._load_json_file(json_decoder.decode)
         load_object.load_from_dict(dict_data[tag])
 
-    def load_array_of_objects(self, tag_array: str, load_object: object) -> list:
+    def load_array_of_objects(self, array_tag: str, load_object: Deserializable) -> list:
         dict_data = self._load_json_file(json_decoder.decode)
         list_data = list()
-        for list_value in dict_data[tag_array]:
+        for list_value in dict_data[array_tag]:
             load_object.load_from_dict(list_value)
             element = copy.deepcopy(load_object)
             list_data.append(element)
         return list_data
 
-    def save_object_to_array(self, tag_array: str, tag_object: str, object_to_save: object) -> None:
+    def save_object_to_array(self, array_tag: str, object_tag: str, object_to_save: object) -> None:
         data_dict = self._load_json_file()
         serialized_object = self._get_serialized_object(object_to_save)
-
-        if tag_array not in data_dict.keys():
-            data_dict[tag_array] = list()
-        self._delete_old_object(data_dict, tag_array, tag_object)
-        data_dict[tag_array].append({tag_object: serialized_object})
+        if array_tag not in data_dict.keys():
+            data_dict[array_tag] = list()
+        self._delete_old_object(data_dict, array_tag, object_tag)
+        data_dict[array_tag].append({object_tag: serialized_object})
 
         self._save_dict_to_file(data_dict)
 
@@ -73,7 +70,7 @@ class Preferences:
         data_dict = self._load_json_file()
         serialized_object = self._get_serialized_object(object_to_save)
 
-        if tag in list(data_dict.keys()):
+        if tag in data_dict.keys():
             data_dict.pop(tag)
         data_dict[tag] = serialized_object
 
