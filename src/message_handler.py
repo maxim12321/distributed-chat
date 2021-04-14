@@ -1,11 +1,11 @@
-from deserializable import Deserializable
+from serializable import Serializable
 from text_message import TextMessage
 from user_info import UserInfo
 from typing import List
 import constants
 
 
-class MessageHandler(Deserializable):
+class MessageHandler(Serializable):
     def __init__(self):
         self.users: List[UserInfo] = []
         self.messages: List[TextMessage] = []

@@ -1,5 +1,5 @@
 from typing import Optional, Callable, Dict, Any
-from deserializable import Deserializable
+from serializable import Serializable
 import constants
 import json_decoder
 import copy
@@ -13,8 +13,7 @@ class Preferences:
     def _load_json_file(self, object_hook: Optional[Callable[[Dict[Any, Any]], Any]] = None) -> dict:
         try:
             with open(self.FILE_NAME, "r") as file:
-                data = json.loads(file.read(), object_hook=object_hook)
-                return data
+                return json.loads(file.read(), object_hook=object_hook)
         except (FileNotFoundError, json.JSONDecodeError):
             return dict()
 
@@ -43,11 +42,11 @@ class Preferences:
         dict_data = self._load_json_file()
         return dict_data[tag]
 
-    def load_object(self, tag: str, load_object: Deserializable) -> None:
+    def load_object(self, tag: str, load_object: Serializable) -> None:
         dict_data = self._load_json_file(json_decoder.decode)
         load_object.load_from_dict(dict_data[tag])
 
-    def load_array_of_objects(self, array_tag: str, load_object: Deserializable) -> list:
+    def load_array_of_objects(self, array_tag: str, load_object: Serializable) -> list:
         dict_data = self._load_json_file(json_decoder.decode)
         list_data = list()
         for list_value in dict_data[array_tag]:

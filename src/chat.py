@@ -1,6 +1,6 @@
 from typing import Optional, Generator, Any
 from dataclasses import dataclass
-from deserializable import Deserializable
+from serializable import Serializable
 from message_handler import MessageHandler
 from chat_message_type import ChatMessageType
 import os
@@ -9,7 +9,7 @@ import constants
 
 
 @dataclass
-class Chat(Deserializable):
+class Chat(Serializable):
 
     def __init__(self):
         self.message_handler = MessageHandler()
