@@ -19,6 +19,7 @@ class Chat(Serializable):
 
     def __iter__(self) -> Generator[str, Any, None]:
         yield from {
+            "chat_id": self.chat_id,
             "chat_name": self.chat_name,
             "private_key": constants.bytes_to_dict(self.private_key),
             "message_handler": dict(self.message_handler)
@@ -30,9 +31,7 @@ class Chat(Serializable):
         self.chat_name = chat_name
 
     def load_from_dict(self, data_dict: dict) -> None:
-        key = list(data_dict.keys())[0]
-        self.chat_id = key
-        data_dict = data_dict[key]
+        self.chat_id = data_dict["chat_id"]
         self.private_key = data_dict["private_key"]
         self.chat_name = data_dict["chat_name"]
         self.message_handler.load_from_dict(data_dict["message_handler"])

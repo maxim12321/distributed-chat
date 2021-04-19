@@ -21,9 +21,9 @@ class Preferences:
         with open(self.FILE_NAME, "w+") as file:
             json.dump(data_dict, file, indent=constants.INDENT)
 
-    def _delete_old_object(self, data_dict: dict, array_tag: str, object_tag: str) -> None:
+    def _delete_old_object(self, data_dict: dict, array_tag: str, object_tag: str, object_tag_value: object) -> None:
         for index, list_value in enumerate(data_dict[array_tag]):
-            if list(list_value.keys())[0] == object_tag:
+            if object_tag in list_value.keys() and list_value[object_tag] == object_tag_value:
                 data_dict[array_tag].pop(index)
                 break
 
@@ -55,13 +55,13 @@ class Preferences:
             list_data.append(element)
         return list_data
 
-    def save_object_to_array(self, array_tag: str, object_tag: str, object_to_save: object) -> None:
+    def save_object_to_array(self, array_tag: str, object_tag: str,  object_to_save: object) -> None:
         data_dict = self._load_json_file()
         serialized_object = self._get_serialized_object(object_to_save)
         if array_tag not in data_dict.keys():
             data_dict[array_tag] = list()
-        self._delete_old_object(data_dict, array_tag, object_tag)
-        data_dict[array_tag].append({object_tag: serialized_object})
+        self._delete_old_object(data_dict, array_tag, object_tag, serialized_object[object_tag])
+        data_dict[array_tag].append(serialized_object)
 
         self._save_dict_to_file(data_dict)
 
