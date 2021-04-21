@@ -27,14 +27,6 @@ class ChordNode:
 
         self.replication_manager = ReplicationManager()
 
-    # Temp, just for testing
-    def get_node_info(self) -> NodeInfo:
-        return self.node_info
-
-    # Temp, just for validating finger tables
-    def get_finger_table(self) -> List[Finger]:
-        return self.finger_table
-
     def get_next_node(self) -> NodeInfo:
         self._check_successor()
         return self.successor
