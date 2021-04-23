@@ -6,10 +6,13 @@ import constants
 
 
 class Chat:
-    def __init__(self, creator_id: bytes, chat_name: str):
+    def __init__(self, user_id: bytes, chat_name=None, private_key=None, ):
         self.message_handler = MessageHandler()
-        self.message_handler.handle_introduce_user(creator_id)
-        self.private_key = None
+        self.message_handler.handle_introduce_user(user_id)
+        if private_key == None:
+            self.private_key = self.generate_private_key()
+        else:
+            self.private_key = private_key
         self.chat_name = chat_name
         self.chat_id = os.urandom(16)
 
@@ -17,12 +20,8 @@ class Chat:
         self.private_key = os.urandom(constants.PRIVATE_KEY_LENGTH)
 
     def generate_invite_link(self, ip_address: bytes) -> str:
-        link_bytes = base64.b64encode(self.private_key + ip_address)
+        link_bytes = base64.b64encode(self.chat_id + self.private_key + ip_address)
         return link_bytes.decode("utf-8")
-
-    def parse_invite_link(self, link: str) -> None:
-        link_bytes = base64.b64decode(link)
-        self.private_key = link_bytes[:constants.PRIVATE_KEY_LENGTH]
 
     def handle_message(self, message: bytes) -> bytes:
         message_type = ChatMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))

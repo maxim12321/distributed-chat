@@ -14,15 +14,16 @@ class RequestType(IntEnum):
 
 
 class ByteMessageSocket:
-    def __init__(self, ip: bytes, on_message_received: callable, on_request_received: callable):
+    def __init__(self, on_message_received: callable, on_request_received: callable):
+        self.ip = socket.gethostbyname(socket.gethostname())
         self.is_listening = True
         self.listening_thread = threading.Thread(target=self.listen,
-                                                 args=(ip, on_message_received, on_request_received))
+                                                 args=(on_message_received, on_request_received))
         self.listening_thread.start()
 
-    def listen(self, ip: bytes, on_message_received: callable, on_request_received: callable) -> None:
+    def listen(self, on_message_received: callable, on_request_received: callable) -> None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind((ip, constants.PORT_ID))
+        sock.bind((self.ip, constants.PORT_ID))
         sock.listen(1)
         sock.settimeout(2.14)
         while self.is_listening:
@@ -105,6 +106,9 @@ class ByteMessageSocket:
         except InvalidSignature:
             return b''
         return message
+
+    def get_ip(self) -> str:
+        return self.ip
 
     def __del__(self):
         self.is_listening = False
