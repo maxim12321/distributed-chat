@@ -1,3 +1,5 @@
+import socket
+
 from chat_message_type import ChatMessageType
 from typing import Dict
 from chat import Chat
@@ -6,17 +8,18 @@ import base64
 
 
 class ChatManager:
-    def __init__(self):
+    def __init__(self, user_id: int):
         self.chat_list: Dict[int, Chat] = dict()
+        self.user_id = user_id
 
-    # def add_chat(self, chat: Chat) -> None:
-    #     self.chat_list[chat.get_chat_id()] = chat
+    def add_chat(self, chat_id: int, chat: Chat):
+        self.chat_list[chat_id] = chat
 
-    def create_chat(self, user_id: int, chat_name: str) -> Chat:
+    def create_chat(self, chat_name: str) -> None:
         chat = Chat()
         chat.create(chat_name)
         chat.handle_message(constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER)
-                            + constants.id_to_bytes(user_id))
+                            + constants.id_to_bytes(self.user_id))
         self.chat_list[chat.get_chat_id()] = chat
 
     def handle_message(self, message: bytes) -> None:
@@ -29,17 +32,20 @@ class ChatManager:
 
     def parse_invite_link(self, link: str) -> any:
         link_bytes = base64.b64decode(link)
-        self.chat_id = link_bytes[:constants.ID_LENGTH]
-        self.private_key = link_bytes[constants.ID_LENGTH:constants.ID_LENGTH + constants.PRIVATE_KEY_LENGTH]
-        return self.chat_id, self.private_key
+        chat_id = link_bytes[:constants.ID_LENGTH]
+        private_key = link_bytes[constants.ID_LENGTH:constants.ID_LENGTH + constants.PRIVATE_KEY_LENGTH]
+        ip_address = link_bytes[-constants.IP_LENGTH:]
+        return chat_id, private_key, ip_address
 
-    def join_chat(self, invite_link: str) -> None:
-        chat_id, private_key = self.parse_invite_link(invite_link)
+    def join_chat_by_link(self, invite_link: str) -> None:
+        chat_id, private_key, ip = self.parse_invite_link(invite_link)
         chat = Chat()
-        self.chat_list[chat.get_chat_id()] = chat
+        chat.private_key = private_key
+        chat.chat_id = chat_id
+        self.chat_list[chat_id] = chat
+
+    def get_chat_info(self, chat_id: int) -> Chat:
+        return self.chat_list[chat_id]
 
     def get_chat_list(self):
         return self.chat_list
-
-    def send_text_message(self, chat_id: int, message: str) -> None:
-        self.chat_list[chat_id].send_text_message(message)

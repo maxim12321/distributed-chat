@@ -2,8 +2,11 @@ import base64
 from enum import IntEnum
 import os
 
+import astropy.io.ascii.ecsv
+
 PRIVATE_KEY_LENGTH: int = 16
 ID_LENGTH: int = 16
+IP_LENGTH: int = 4
 
 BYTE_ORDER: str = "big"
 REQUEST_TYPE_BYTE_SIZE: int = 1
@@ -47,8 +50,8 @@ def bytes_to_string(data: bytes) -> str:
     return base64.b64encode(data).decode("utf-8")
 
 
-def string_to_bytes(data: bytes) -> bytes:
-    return base64.b64decode(data)
+def string_to_bytes(data: str) -> bytes:
+    return str.encode(data)
 
 
 def bytes_to_dict(data: bytes):

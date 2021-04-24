@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from serializable import Serializable
 from message_handler import MessageHandler
 from chat_message_type import ChatMessageType
+import socket
 import os
 import base64
 import constants
@@ -25,7 +26,7 @@ class Chat(Serializable):
             "message_handler": dict(self.message_handler)
         }.items()
 
-    def create(self, chat_name: str):
+    def create(self, chat_name: str) -> None:
         self.chat_id = constants.random_int(constants.ID_LENGTH)
         self.private_key = os.urandom(constants.PRIVATE_KEY_LENGTH)
         self.chat_name = chat_name
@@ -37,7 +38,8 @@ class Chat(Serializable):
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def generate_invite_link(self, ip_address: bytes) -> str:
-        link_bytes = base64.b64encode(self.chat_id + self.private_key + ip_address)
+        link_bytes = base64.b64encode(
+            constants.id_to_bytes(self.chat_id) + self.private_key + ip_address)
         return link_bytes.decode("utf-8")
 
     def handle_message(self, message: bytes) -> bytes:
@@ -55,6 +57,9 @@ class Chat(Serializable):
         if message_type == ChatMessageType.USER_LIST:
             self.message_handler.handle_user_list(message_content)
             return bytearray()
+
+        if message_type == ChatMessageType.GET_CHAT_INFO:
+            pass
 
     def get_user_list_message(self) -> bytes:
         user_id_list = self.message_handler.get_user_id_list()
