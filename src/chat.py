@@ -1,3 +1,6 @@
+from typing import Optional, Generator, Any
+from dataclasses import dataclass
+from serializable import Serializable
 from message_handler import MessageHandler
 from chat_message_type import ChatMessageType
 import os
@@ -5,19 +8,33 @@ import base64
 import constants
 
 
-class Chat:
-    def __init__(self, user_id: bytes, chat_name=None, private_key=None, ):
-        self.message_handler = MessageHandler()
-        self.message_handler.handle_introduce_user(user_id)
-        if private_key == None:
-            self.private_key = self.generate_private_key()
-        else:
-            self.private_key = private_key
-        self.chat_name = chat_name
-        self.chat_id = os.urandom(16)
+@dataclass
+class Chat(Serializable):
 
-    def generate_private_key(self) -> None:
+    def __init__(self):
+        self.message_handler = MessageHandler()
+        self.private_key: Optional[bytes] = None
+        self.chat_name: Optional[str] = None
+        self.chat_id: Optional[int] = None
+
+    def __iter__(self) -> Generator[str, Any, None]:
+        yield from {
+            "chat_id": self.chat_id,
+            "chat_name": self.chat_name,
+            "private_key": constants.bytes_to_dict(self.private_key),
+            "message_handler": dict(self.message_handler)
+        }.items()
+
+    def create(self, chat_name: str):
+        self.chat_id = constants.random_int(constants.ID_LENGTH)
         self.private_key = os.urandom(constants.PRIVATE_KEY_LENGTH)
+        self.chat_name = chat_name
+
+    def load_from_dict(self, data_dict: dict) -> None:
+        self.chat_id = data_dict["chat_id"]
+        self.private_key = data_dict["private_key"]
+        self.chat_name = data_dict["chat_name"]
+        self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def generate_invite_link(self, ip_address: bytes) -> str:
         link_bytes = base64.b64encode(self.chat_id + self.private_key + ip_address)
@@ -41,11 +58,13 @@ class Chat:
 
     def get_user_list_message(self) -> bytes:
         user_id_list = self.message_handler.get_user_id_list()
-        user_id_list_bytes = bytearray().join(user_id_list)
+        user_id_list_bytes = bytearray()
+        for user_info in user_id_list:
+            user_id_list_bytes += constants.id_to_bytes(user_info.user_id)
         return constants.message_type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
 
     def get_introduce_user_message(self, user_id: bytes) -> bytes:
         return constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
 
-    def get_chat_id(self) -> bytes:
+    def get_chat_id(self) -> int:
         return self.chat_id
