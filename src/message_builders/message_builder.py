@@ -1,3 +1,4 @@
+import json
 from enum import IntEnum
 from typing import Generic, Optional, TypeVar
 
@@ -7,8 +8,7 @@ from src.chat_message_cipher import ChatMessageCipher
 
 
 class MessageBuilder:
-    def __init__(self, message_type: MessageType, parent: Optional['MessageBuilder'] = None) -> None:
-        self.message_type = message_type
+    def __init__(self, parent: Optional['MessageBuilder'] = None) -> None:
         self.parent: Optional[MessageBuilder] = parent
         self.data = bytearray()
 
@@ -25,22 +25,31 @@ class MessageBuilder:
         self.data.extend(value)
         return self
 
+    def append_serializable(self, value: object) -> 'MessageBuilder':
+        data = json.dumps(value).encode("utf-8")
+        self.append_bytes(data)
+        return self
+
     def begin_authenticated(self) -> 'AuthenticatedBuilder':
-        return AuthenticatedBuilder(self.message_type, parent=self)
+        return AuthenticatedBuilder(parent=self)
 
     def begin_encrypted(self) -> 'EncryptedBuilder':
-        return EncryptedBuilder(self.message_type, parent=self)
+        return EncryptedBuilder(parent=self)
 
     def build(self) -> bytes:
-        return constants.type_to_bytes(self.message_type) + bytes(self.data)
+        return bytes(self.data)
 
     @staticmethod
     def message() -> 'MessageBuilder':
-        return MessageBuilder(MessageType.MESSAGE)
+        builder = MessageBuilder()
+        builder.append_type(MessageType.MESSAGE)
+        return builder
 
     @staticmethod
     def request() -> 'MessageBuilder':
-        return MessageBuilder(MessageType.REQUEST)
+        builder = MessageBuilder()
+        builder.append_type(MessageType.REQUEST)
+        return builder
 
 
 T = TypeVar('T')
@@ -49,7 +58,7 @@ T = TypeVar('T')
 class AuthenticatedBuilder(MessageBuilder, Generic[T]):
     def authenticate(self, key: bytes) -> T:
         if self.parent is None:
-            self.parent = MessageBuilder(self.message_type)
+            self.parent = MessageBuilder()
 
         authenticated_data = ByteMessageSocket.add_authentication_code(bytes(self.data), key)
 
@@ -60,7 +69,7 @@ class AuthenticatedBuilder(MessageBuilder, Generic[T]):
 class EncryptedBuilder(MessageBuilder, Generic[T]):
     def encrypt(self, key: bytes) -> T:
         if self.parent is None:
-            self.parent = MessageBuilder(self.message_type)
+            self.parent = MessageBuilder()
 
         cipher = ChatMessageCipher(key)
         encrypted_data = cipher.encrypt_data(bytes(self.data))

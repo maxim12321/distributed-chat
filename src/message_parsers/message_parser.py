@@ -1,3 +1,4 @@
+import json
 from enum import IntEnum
 from typing import Generic, Optional, TypeVar
 
@@ -28,6 +29,12 @@ class MessageParser:
     def append_bytes(self, value: Container[bytes]) -> 'MessageParser':
         length = self._pop_int(constants.MESSAGE_LENGTH_BYTE_SIZE)
         value.set(self._pop_bytes(length))
+        return self
+
+    def append_serializable(self, value: Container[object]) -> 'MessageParser':
+        length = self._pop_int(constants.MESSAGE_LENGTH_BYTE_SIZE)
+        data = self._pop_bytes(length)
+        value.set(json.loads(data.decode("utf-8")))
         return self
 
     def begin_authenticated(self, key: bytes) -> 'AuthenticatedParser':
