@@ -16,7 +16,7 @@ class RequestRedirection:
         try:
             for handler in self.handlers[type]:
                 try:
-                    return handler(address, message)
+                    return handler(message)
                 except TypeError:
                     print(f"Function {handler.__name__} has wrong arguments")
         except KeyError:

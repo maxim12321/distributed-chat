@@ -58,7 +58,10 @@ class Chat(Serializable):
             self.message_handler.handle_user_list(message_content)
             return bytearray()
 
-        if message_type == ChatMessageType.GET_CHAT_INFO:
+        if message_type == ChatMessageType.GET_CHAT_NAME:
+            return constants.string_to_bytes(self.chat_name)
+
+        if message_type == ChatMessageType.GET_TEXT_MESSAGES:
             pass
 
     def get_user_list_message(self) -> bytes:
