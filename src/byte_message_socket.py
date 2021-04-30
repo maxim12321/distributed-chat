@@ -1,14 +1,15 @@
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.exceptions import InvalidSignature
-from byte_message_type import ByteMessageType
+from src.byte_message_type import ByteMessageType
 import time
 import socket
 import threading
-import constants
+from src import constants
 from enum import IntEnum
+from typing import Optional
 
 
-class RequestType(IntEnum):
+class MessageType(IntEnum):
     REQUEST = 0
     MESSAGE = 1
 
@@ -35,9 +36,9 @@ class ByteMessageSocket:
                 listen_socket.settimeout(2.14)
                 try:
                     message = listen_socket.recv(length)
-                    request_type = constants.to_int(message[0:constants.REQUEST_TYPE_BYTE_SIZE])
-                    message = message[constants.REQUEST_TYPE_BYTE_SIZE:]
-                    if request_type == RequestType.MESSAGE:
+                    request_type = constants.to_int(message[0:constants.TYPE_BYTE_SIZE])
+                    message = message[constants.TYPE_BYTE_SIZE:]
+                    if request_type == MessageType.MESSAGE:
                         on_message_received(address, message)
                     else:
                         answer = on_request_received(message)
@@ -61,7 +62,7 @@ class ByteMessageSocket:
         return None
 
     def send_request(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bytes:
-        message = self.finalize_message(RequestType.REQUEST, message_type, message)
+        message = self.finalize_message(MessageType.REQUEST, message_type, message)
         send_sock = self.create_send_socket(ip)
         if send_sock == None:
             return b''
@@ -75,27 +76,29 @@ class ByteMessageSocket:
             return b''
 
     def send(self, ip: bytes, message_type: ByteMessageType, message: bytes) -> bool:
-        message = self.finalize_message(RequestType.MESSAGE, message_type, message)
+        message = self.finalize_message(MessageType.MESSAGE, message_type, message)
         send_sock = self.create_send_socket(ip)
         if send_sock == None:
             return False
         send_sock.sendall(message)
         return True
 
-    def finalize_message(self, request_type: RequestType, message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.message_type_to_bytes(message_type) + message
-        message = constants.request_type_to_bytes(request_type) + message
+    def finalize_message(self, request_type: MessageType, message_type: ByteMessageType, message: bytes) -> bytes:
+        message = constants.type_to_bytes(message_type) + message
+        message = constants.type_to_bytes(request_type) + message
         message = constants.message_length_to_bytes(len(message)) + message
         return message
 
-    def add_authentication_code(self, message: bytes, key: bytes) -> bytes:
+    @staticmethod
+    def add_authentication_code(message: bytes, key: bytes) -> bytes:
         h = hmac.HMAC(key, hashes.SHA1())
         h.update(message)
         my_hash = h.finalize()
         final_message = message + my_hash
         return final_message
 
-    def authenticate(self, message: bytes, key: bytes) -> bytes:
+    @staticmethod
+    def authenticate(message: bytes, key: bytes) -> Optional[bytes]:
         h = hmac.HMAC(key, hashes.SHA1())
         old_hmac_code = message[-constants.HMAC_BYTE_SIZE:]
         message = message[0:-constants.HMAC_BYTE_SIZE]
@@ -103,7 +106,7 @@ class ByteMessageSocket:
         try:
             h.verify(old_hmac_code)
         except InvalidSignature:
-            return b''
+            return None
         return message
 
     def __del__(self):

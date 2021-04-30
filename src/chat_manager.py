@@ -14,7 +14,7 @@ class ChatManager:
     def create_chat(self, user_id: int, chat_name: str) -> Chat:
         chat = Chat()
         chat.create(chat_name)
-        chat.handle_message(constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER)
+        chat.handle_message(constants.type_to_bytes(ChatMessageType.INTRODUCE_USER)
                             + constants.id_to_bytes(user_id))
         self.chat_list[chat.get_chat_id()] = chat
         return chat
