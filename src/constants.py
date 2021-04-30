@@ -42,8 +42,8 @@ def bytes_to_string(data: bytes) -> str:
     return base64.b64encode(data).decode("utf-8")
 
 
-def string_to_bytes(data: bytes) -> bytes:
-    return base64.b64decode(data)
+def string_to_bytes(data: str) -> bytes:
+    return base64.b64decode(data.encode("utf-8"))
 
 
 def bytes_to_dict(data: bytes):
