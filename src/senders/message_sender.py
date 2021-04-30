@@ -4,7 +4,7 @@ from typing import Callable, Optional
 from src.byte_message_type import ByteMessageType
 
 
-class MessageHandler(ABC):
+class MessageSender(ABC):
     @abstractmethod
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],

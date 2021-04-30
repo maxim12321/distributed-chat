@@ -4,11 +4,11 @@ from typing import Callable, Optional
 
 from src import constants
 from src.byte_message_type import ByteMessageType
-from src.handlers.message_handler import MessageHandler
-from src.handlers.message_type import MessageType
+from src.senders.message_sender import MessageSender
+from src.senders.message_type import MessageType
 
 
-class SocketMessageHandler(MessageHandler):
+class SocketMessageSender(MessageSender):
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
                  on_request_received: Callable[[bytes], bytes]) -> None:
@@ -52,9 +52,9 @@ class SocketMessageHandler(MessageHandler):
         return None
 
     @staticmethod
-    def _finalize_message(request_type: MessageType, message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.message_type_to_bytes(message_type) + message
-        message = constants.request_type_to_bytes(request_type) + message
+    def _finalize_message(message_type: MessageType, byte_message_type: ByteMessageType, message: bytes) -> bytes:
+        message = constants.message_type_to_bytes(byte_message_type) + message
+        message = constants.request_type_to_bytes(message_type) + message
         message = constants.message_length_to_bytes(len(message)) + message
         return message
 
@@ -71,7 +71,7 @@ class SocketMessageHandler(MessageHandler):
             except socket.timeout:
                 pass
 
-    def _create_socket(self, timeout: float):
+    def _create_socket(self, timeout: float) -> socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((self.ip, constants.PORT_ID))
         sock.listen(1)
@@ -93,7 +93,7 @@ class SocketMessageHandler(MessageHandler):
         except socket.timeout:
             return None
 
-    def _process_message(self, message: bytes, message_socket: socket):
+    def _process_message(self, message: bytes, message_socket: socket) -> None:
         message_type = constants.to_int(message[0:constants.REQUEST_TYPE_BYTE_SIZE])
         message = message[constants.REQUEST_TYPE_BYTE_SIZE:]
 
@@ -103,3 +103,7 @@ class SocketMessageHandler(MessageHandler):
             answer = self.handler_request(message)
             answer = constants.message_length_to_bytes(len(answer)) + answer
             message_socket.send(answer)
+
+    def __del__(self) -> None:
+        self.is_listening = False
+        self.listening_thread.join()
