@@ -11,8 +11,8 @@ class MessageRedirection:
         self.handlers[type].append(handler)
 
     def handle(self, address: (str, int), message: bytes) -> None:
-        type = ByteMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
-        message = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
+        type = ByteMessageType(constants.to_int(message[:constants.TYPE_BYTE_SIZE]))
+        message = message[constants.TYPE_BYTE_SIZE:]
         try:
             for handler in self.handlers[type]:
                 try:
