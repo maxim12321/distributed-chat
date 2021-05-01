@@ -20,20 +20,20 @@ class SocketMessageSender(MessageSender):
         self.listening_thread = threading.Thread(target=self._listen)
         self.listening_thread.start()
 
-    def send_message(self, target_ip: bytes, message_type: ByteMessageType, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, byte_message_type: ByteMessageType, message: bytes) -> None:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return
 
-        message = self._finalize_message(MessageType.MESSAGE, message_type, message)
+        message = self._finalize_message(MessageType.MESSAGE, byte_message_type, message)
         sending_socket.send(message)
 
-    def send_request(self, target_ip: bytes, message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
+    def send_request(self, target_ip: bytes, byte_message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return None
 
-        message = self._finalize_message(MessageType.REQUEST, message_type, request)
+        message = self._finalize_message(MessageType.REQUEST, byte_message_type, request)
         sending_socket.send(message)
 
         return self._receive_message(sending_socket)
@@ -53,8 +53,8 @@ class SocketMessageSender(MessageSender):
 
     @staticmethod
     def _finalize_message(message_type: MessageType, byte_message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.message_type_to_bytes(byte_message_type) + message
-        message = constants.request_type_to_bytes(message_type) + message
+        message = constants.type_to_bytes(byte_message_type) + message
+        message = constants.type_to_bytes(message_type) + message
         message = constants.message_length_to_bytes(len(message)) + message
         return message
 
@@ -94,13 +94,13 @@ class SocketMessageSender(MessageSender):
             return None
 
     def _process_message(self, message: bytes, message_socket: socket) -> None:
-        message_type = constants.to_int(message[0:constants.REQUEST_TYPE_BYTE_SIZE])
-        message = message[constants.REQUEST_TYPE_BYTE_SIZE:]
+        message_type = constants.to_int(message[0:constants.TYPE_BYTE_SIZE])
+        message = message[constants.TYPE_BYTE_SIZE:]
 
         if message_type == MessageType.MESSAGE:
             self.handle_message(message)
         elif message_type == MessageType.REQUEST:
-            answer = self.handler_request(message)
+            answer = self.handle_request(message)
             answer = constants.message_length_to_bytes(len(answer)) + answer
             message_socket.send(answer)
 

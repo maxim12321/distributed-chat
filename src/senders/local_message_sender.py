@@ -21,11 +21,11 @@ class LocalMessageSender(MessageSender):
 
     def send_request(self, target_ip: bytes, message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
         request = self._finalize_message(MessageType.REQUEST, message_type, request)
-        return self.message_senders[target_ip].handler_request(request)
+        return self.message_senders[target_ip].handle_request(request)
 
     @staticmethod
     def _finalize_message(message_type: MessageType, byte_message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.message_type_to_bytes(byte_message_type) + message
-        message = constants.request_type_to_bytes(message_type) + message
+        message = constants.type_to_bytes(byte_message_type) + message
+        message = constants.type_to_bytes(message_type) + message
         message = constants.message_length_to_bytes(len(message)) + message
         return message

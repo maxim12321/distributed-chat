@@ -23,5 +23,5 @@ class MessageSender(ABC):
     def handle_message(self, message: bytes) -> None:
         self.on_message_received(message)
 
-    def handler_request(self, request: bytes) -> bytes:
+    def handle_request(self, request: bytes) -> bytes:
         return self.on_request_received(request)
