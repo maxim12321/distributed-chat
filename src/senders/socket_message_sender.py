@@ -16,8 +16,6 @@ class SocketMessageSender(MessageSender):
                  on_request_received: Callable[[bytes], bytes]) -> None:
         super().__init__(ip, on_message_received, on_request_received)
 
-        self.ip = ip
-
         self.is_listening = True
         self.listening_thread = threading.Thread(target=self._listen)
         self.listening_thread.start()
@@ -33,7 +31,7 @@ class SocketMessageSender(MessageSender):
 
         sending_socket.send(message)
 
-    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+    def send_request_message(self, target_ip: bytes, request: bytes) -> socket:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return None
@@ -43,7 +41,28 @@ class SocketMessageSender(MessageSender):
             .build_with_length()
 
         sending_socket.send(request)
-        return self._receive_message(sending_socket)
+        return sending_socket
+
+    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+        sending_socket = self.send_request_message(target_ip, request)
+        if sending_socket is None:
+            return None
+
+        return self.receive_message(sending_socket)
+
+    def receive_message(self, message_socket: socket) -> Optional[bytes]:
+        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
+
+        try:
+            message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
+
+            if message_length == 0:
+                message_socket.close()
+                return None
+            return message_socket.recv(message_length)
+
+        except socket.timeout:
+            return None
 
     @staticmethod
     def _connect(target_ip: bytes) -> Optional[socket]:
@@ -65,7 +84,7 @@ class SocketMessageSender(MessageSender):
             try:
                 message_socket, address = listening_socket.accept()
 
-                message = self._receive_message(message_socket)
+                message = self.receive_message(message_socket)
                 self._process_message(message, message_socket)
 
             except socket.timeout:
@@ -77,21 +96,6 @@ class SocketMessageSender(MessageSender):
         sock.listen(1)
         sock.settimeout(timeout)
         return sock
-
-    @staticmethod
-    def _receive_message(message_socket: socket) -> Optional[bytes]:
-        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
-
-        try:
-            message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
-
-            if message_length == 0:
-                message_socket.close()
-                return None
-            return message_socket.recv(message_length)
-
-        except socket.timeout:
-            return None
 
     def _process_message(self, message: bytes, message_socket: socket) -> None:
         message_type = Container[MessageType]()

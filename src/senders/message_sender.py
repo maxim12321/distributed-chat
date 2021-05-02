@@ -7,6 +7,7 @@ class MessageSender(ABC):
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
                  on_request_received: Callable[[bytes], bytes]) -> None:
+        self.ip = ip
         self.on_message_received = on_message_received
         self.on_request_received = on_request_received
 
@@ -16,6 +17,14 @@ class MessageSender(ABC):
 
     @abstractmethod
     def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+        pass
+
+    @abstractmethod
+    def send_request_message(self, target_ip: bytes, message: bytes):
+        pass
+
+    @abstractmethod
+    def receive_message(self, current_socket) -> Optional[bytes]:
         pass
 
     def handle_message(self, message: bytes) -> None:
