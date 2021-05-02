@@ -7,7 +7,7 @@ from src.senders.message_sender import MessageSender
 
 class LocalMessageSender(MessageSender):
     message_senders: Dict[bytes, 'LocalMessageSender'] = {}
-    sockets: List[Tuple[bytes, bytes]] = []
+    requests: List[Tuple[bytes, bytes]] = []
 
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
@@ -29,11 +29,11 @@ class LocalMessageSender(MessageSender):
 
     def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
         with self.lock:
-            self.sockets.append((target_ip, request))
+            self.requests.append((target_ip, request))
 
     def send_long_polling_requests(self):
         while True:
-            for target_ip, message in self.sockets:
+            for target_ip, message in self.requests:
                 answer = self.send_request(target_ip, message)
                 self.on_long_polling_request_received(answer)
                 sleep(5)
