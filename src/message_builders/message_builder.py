@@ -3,8 +3,9 @@ from enum import IntEnum
 from typing import Generic, Optional, TypeVar
 
 from src import constants
-from src.byte_message_socket import ByteMessageSocket, MessageType
+from src.senders.message_type import MessageType
 from src.chat_message_cipher import ChatMessageCipher
+from src.security.authentication import Authentication
 from src.serializable import Serializable
 
 
@@ -45,6 +46,10 @@ class MessageBuilder:
     def build(self) -> bytes:
         return bytes(self.data)
 
+    def build_with_length(self) -> bytes:
+        length_bytes = constants.message_length_to_bytes(len(self.data))
+        return length_bytes + bytes(self.data)
+
     @staticmethod
     def builder() -> 'MessageBuilder':
         return MessageBuilder()
@@ -70,7 +75,7 @@ class AuthenticatedBuilder(MessageBuilder, Generic[T]):
         if self.parent is None:
             self.parent = self.builder()
 
-        authenticated_data = ByteMessageSocket.add_authentication_code(bytes(self.data), key)
+        authenticated_data = Authentication.add_authentication_code(bytes(self.data), key)
 
         self.parent.append_bytes(authenticated_data)
         return self.parent

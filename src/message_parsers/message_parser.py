@@ -3,9 +3,9 @@ from enum import IntEnum
 from typing import Generic, Optional, TypeVar
 
 from src import constants, json_decoder
-from src.byte_message_socket import ByteMessageSocket
 from src.chat_message_cipher import ChatMessageCipher
 from src.message_parsers.container import Container
+from src.security.authentication import Authentication
 from src.serializable import Serializable
 
 
@@ -77,7 +77,7 @@ class AuthenticatedParser(MessageParser, Generic[T]):
     def __init__(self, data: bytes, key: bytes, parent: Optional[T] = None) -> None:
         super().__init__(data, parent)
 
-        self.data = ByteMessageSocket.authenticate(self.data, key)
+        self.data = Authentication.authenticate(self.data, key)
         if self.data is None:
             raise AuthenticationError
 
