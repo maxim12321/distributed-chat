@@ -3,7 +3,9 @@ import threading
 from typing import Callable, Optional
 
 from src import constants
-from src.byte_message_type import ByteMessageType
+from src.message_builders.message_builder import MessageBuilder
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
 from src.senders.message_sender import MessageSender
 from src.senders.message_type import MessageType
 
@@ -20,22 +22,27 @@ class SocketMessageSender(MessageSender):
         self.listening_thread = threading.Thread(target=self._listen)
         self.listening_thread.start()
 
-    def send_message(self, target_ip: bytes, byte_message_type: ByteMessageType, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, message: bytes) -> None:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return
 
-        message = self._finalize_message(MessageType.MESSAGE, byte_message_type, message)
+        message = MessageBuilder.message() \
+            .append_bytes(message) \
+            .build_with_length()
+
         sending_socket.send(message)
 
-    def send_request(self, target_ip: bytes, byte_message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
+    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return None
 
-        message = self._finalize_message(MessageType.REQUEST, byte_message_type, request)
-        sending_socket.send(message)
+        request = MessageBuilder.request() \
+            .append_bytes(request) \
+            .build_with_length()
 
+        sending_socket.send(request)
         return self._receive_message(sending_socket)
 
     @staticmethod
@@ -50,13 +57,6 @@ class SocketMessageSender(MessageSender):
                 continue
 
         return None
-
-    @staticmethod
-    def _finalize_message(message_type: MessageType, byte_message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.type_to_bytes(byte_message_type) + message
-        message = constants.type_to_bytes(message_type) + message
-        message = constants.message_length_to_bytes(len(message)) + message
-        return message
 
     def _listen(self) -> None:
         listening_socket = self._create_socket(constants.LISTENING_TIMEOUT)
@@ -94,14 +94,17 @@ class SocketMessageSender(MessageSender):
             return None
 
     def _process_message(self, message: bytes, message_socket: socket) -> None:
-        message_type = constants.to_int(message[0:constants.TYPE_BYTE_SIZE])
-        message = message[constants.TYPE_BYTE_SIZE:]
+        message_type = Container[MessageType]()
+        message = MessageParser.parser(message) \
+            .append_type(message_type) \
+            .parse()
 
-        if message_type == MessageType.MESSAGE:
+        if message_type.get() == MessageType.MESSAGE:
             self.handle_message(message)
-        elif message_type == MessageType.REQUEST:
-            answer = self.handle_request(message)
-            answer = constants.message_length_to_bytes(len(answer)) + answer
+        elif message_type.get() == MessageType.REQUEST:
+            answer = MessageBuilder.builder() \
+                    .append_bytes(self.handle_request(message)) \
+                    .build_with_length()
             message_socket.send(answer)
 
     def __del__(self) -> None:

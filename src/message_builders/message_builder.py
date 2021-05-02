@@ -46,6 +46,10 @@ class MessageBuilder:
     def build(self) -> bytes:
         return bytes(self.data)
 
+    def build_with_length(self) -> bytes:
+        length_bytes = constants.message_length_to_bytes(len(self.data))
+        return length_bytes + bytes(self.data)
+
     @staticmethod
     def builder() -> 'MessageBuilder':
         return MessageBuilder()

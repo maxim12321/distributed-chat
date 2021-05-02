@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Optional
 
-from src.byte_message_type import ByteMessageType
-
 
 class MessageSender(ABC):
     @abstractmethod
@@ -13,11 +11,11 @@ class MessageSender(ABC):
         self.on_request_received = on_request_received
 
     @abstractmethod
-    def send_message(self, target_ip: bytes, message_type: ByteMessageType, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, message: bytes) -> None:
         pass
 
     @abstractmethod
-    def send_request(self, target_ip: bytes, message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
+    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
         pass
 
     def handle_message(self, message: bytes) -> None:

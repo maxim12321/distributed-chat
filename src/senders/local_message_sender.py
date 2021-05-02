@@ -1,9 +1,7 @@
 from typing import Optional, Callable, Dict
 
-from src import constants
-from src.byte_message_type import ByteMessageType
+from src.message_builders.message_builder import MessageBuilder
 from src.senders.message_sender import MessageSender
-from src.senders.message_type import MessageType
 
 
 class LocalMessageSender(MessageSender):
@@ -15,17 +13,16 @@ class LocalMessageSender(MessageSender):
         super().__init__(ip, on_message_received, on_request_received)
         self.message_senders[ip] = self
 
-    def send_message(self, target_ip: bytes, message_type: ByteMessageType, message: bytes) -> None:
-        message = self._finalize_message(MessageType.MESSAGE, message_type, message)
+    def send_message(self, target_ip: bytes, message: bytes) -> None:
+        message = MessageBuilder.message() \
+            .append_bytes(message) \
+            .build_with_length()
+
         self.message_senders[target_ip].handle_message(message)
 
-    def send_request(self, target_ip: bytes, message_type: ByteMessageType, request: bytes) -> Optional[bytes]:
-        request = self._finalize_message(MessageType.REQUEST, message_type, request)
-        return self.message_senders[target_ip].handle_request(request)
+    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+        request = MessageBuilder.request() \
+            .append_bytes(request) \
+            .build_with_length()
 
-    @staticmethod
-    def _finalize_message(message_type: MessageType, byte_message_type: ByteMessageType, message: bytes) -> bytes:
-        message = constants.type_to_bytes(byte_message_type) + message
-        message = constants.type_to_bytes(message_type) + message
-        message = constants.message_length_to_bytes(len(message)) + message
-        return message
+        return self.message_senders[target_ip].handle_request(request)
