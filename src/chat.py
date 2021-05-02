@@ -43,8 +43,8 @@ class Chat(Serializable):
         return link_bytes.decode("utf-8")
 
     def handle_message(self, message: bytes) -> bytes:
-        message_type = ChatMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
-        message_content = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
+        message_type = ChatMessageType(constants.to_int(message[:constants.TYPE_BYTE_SIZE]))
+        message_content = message[constants.TYPE_BYTE_SIZE:]
         if message_type == ChatMessageType.TEXT_MESSAGE:
             self.message_handler.handle_text_message(message_content)
             return bytearray()
@@ -69,10 +69,10 @@ class Chat(Serializable):
         user_id_list_bytes = bytearray()
         for user_info in user_id_list:
             user_id_list_bytes += constants.id_to_bytes(user_info.user_id)
-        return constants.message_type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
+        return constants.type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
 
     def get_introduce_user_message(self, user_id: bytes) -> bytes:
-        return constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
+        return constants.type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
 
     def get_chat_id(self) -> int:
         return self.chat_id
