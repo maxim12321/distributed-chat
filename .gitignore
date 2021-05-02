@@ -1,1 +1,3 @@
 .idea
+src/main.py
+**__pycache__**
