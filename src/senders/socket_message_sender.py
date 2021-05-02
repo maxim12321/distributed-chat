@@ -1,6 +1,7 @@
+import select
 import socket
 import threading
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict
 
 from src import constants
 from src.message_builders.message_builder import MessageBuilder
@@ -13,8 +14,13 @@ from src.senders.message_type import MessageType
 class SocketMessageSender(MessageSender):
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
-                 on_request_received: Callable[[bytes], bytes]) -> None:
-        super().__init__(ip, on_message_received, on_request_received)
+                 on_request_received: Callable[[bytes], bytes],
+                 on_long_polling_request_received: Callable[[bytes], None]) -> None:
+        super().__init__(ip, on_message_received, on_request_received, on_long_polling_request_received)
+
+        self.long_polling_sockets: Dict[socket, (bytes, bytes)] = {}
+        self.long_polling_thread = threading.Thread(target=self._long_polling_requests)
+        self.long_polling_thread.start()
 
         self.is_listening = True
         self.listening_thread = threading.Thread(target=self._listen)
@@ -48,21 +54,28 @@ class SocketMessageSender(MessageSender):
         if sending_socket is None:
             return None
 
-        return self.receive_message(sending_socket)
+        return self._receive_message(sending_socket)
 
-    def receive_message(self, message_socket: socket) -> Optional[bytes]:
-        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
+    def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
+        current_socket = self.send_request_message(target_ip, request)
+        self.long_polling_sockets[current_socket] = (target_ip, request)
 
-        try:
-            message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
+    def _long_polling_requests(self) -> None:
+        while True:
+            read_sockets, write_sockets, error_sockets = select.select(self.long_polling_sockets.keys(), [], [])
 
-            if message_length == 0:
-                message_socket.close()
-                return None
-            return message_socket.recv(message_length)
+            for current_socket in read_sockets:
+                target_ip, request = self.long_polling_sockets[current_socket]
 
-        except socket.timeout:
-            return None
+                answer = self._receive_message(current_socket)
+                if answer is None:
+                    continue
+
+                self.on_long_polling_request_received(answer)
+
+                self.long_polling_sockets.pop(current_socket)
+                new_socket = self.send_request_message(target_ip, request)
+                self.long_polling_sockets[new_socket] = (target_ip, request)
 
     @staticmethod
     def _connect(target_ip: bytes) -> Optional[socket]:
@@ -77,6 +90,21 @@ class SocketMessageSender(MessageSender):
 
         return None
 
+    @staticmethod
+    def _receive_message(message_socket: socket) -> Optional[bytes]:
+        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
+
+        try:
+            message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
+
+            if message_length == 0:
+                message_socket.close()
+                return None
+            return message_socket.recv(message_length)
+
+        except socket.timeout:
+            return None
+
     def _listen(self) -> None:
         listening_socket = self._create_socket(constants.LISTENING_TIMEOUT)
 
@@ -84,7 +112,7 @@ class SocketMessageSender(MessageSender):
             try:
                 message_socket, address = listening_socket.accept()
 
-                message = self.receive_message(message_socket)
+                message = self._receive_message(message_socket)
                 self._process_message(message, message_socket)
 
             except socket.timeout:
@@ -107,10 +135,11 @@ class SocketMessageSender(MessageSender):
             self.handle_message(message)
         elif message_type.get() == MessageType.REQUEST:
             answer = MessageBuilder.builder() \
-                    .append_bytes(self.handle_request(message)) \
-                    .build_with_length()
+                .append_bytes(self.handle_request(message)) \
+                .build_with_length()
             message_socket.send(answer)
 
     def __del__(self) -> None:
         self.is_listening = False
         self.listening_thread.join()
+        self.long_polling_thread.join()
