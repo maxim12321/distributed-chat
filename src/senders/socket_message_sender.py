@@ -15,8 +15,8 @@ class SocketMessageSender(MessageSender):
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
                  on_request_received: Callable[[bytes], bytes],
-                 on_long_polling_request_received: Callable[[bytes], None]) -> None:
-        super().__init__(ip, on_message_received, on_request_received, on_long_polling_request_received)
+                 on_long_polling_response_received: Callable[[bytes], None]) -> None:
+        super().__init__(ip, on_message_received, on_request_received, on_long_polling_response_received)
 
         self.long_polling_sockets: Dict[socket, (bytes, bytes)] = {}
         self.long_polling_thread = threading.Thread(target=self._long_polling_requests)
@@ -71,7 +71,7 @@ class SocketMessageSender(MessageSender):
                 if answer is None:
                     continue
 
-                self.on_long_polling_request_received(answer)
+                self.on_long_polling_response_received(answer)
 
                 self.long_polling_sockets.pop(current_socket)
                 new_socket = self.send_request_message(target_ip, request)

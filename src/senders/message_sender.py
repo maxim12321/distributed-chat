@@ -7,11 +7,11 @@ class MessageSender(ABC):
     def __init__(self, ip: bytes,
                  on_message_received: Callable[[bytes], None],
                  on_request_received: Callable[[bytes], bytes],
-                 on_long_polling_request_received: Callable[[bytes], None]) -> None:
+                 on_long_polling_response_received: Callable[[bytes], None]) -> None:
         self.ip = ip
         self.on_message_received = on_message_received
         self.on_request_received = on_request_received
-        self.on_long_polling_request_received = on_long_polling_request_received
+        self.on_long_polling_response_received = on_long_polling_response_received
 
     @abstractmethod
     def send_message(self, target_ip: bytes, message: bytes) -> None:
@@ -32,4 +32,4 @@ class MessageSender(ABC):
         return self.on_request_received(request)
 
     def handle_long_polling_request(self, message: bytes):
-        self.on_long_polling_request_received(message)
+        self.on_long_polling_response_received(message)
