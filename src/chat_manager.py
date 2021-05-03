@@ -1,7 +1,12 @@
 from chat_message_type import ChatMessageType
-from typing import Dict
+from typing import Dict, Optional, List
 from chat import Chat
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
+from src.message_builders.message_builder import MessageBuilder
 import constants
+from src.user_info import UserInfo
+from src.text_message import TextMessage
 
 
 class ChatManager:
@@ -11,15 +16,34 @@ class ChatManager:
     def add_chat(self, chat: Chat) -> None:
         self.chat_list[chat.get_chat_id()] = chat
 
-    def create_chat(self, user_id: int, chat_name: str) -> Chat:
+    def create_chat(self, ip: bytes, user_id: int, chat_name: str) -> None:
         chat = Chat()
         chat.create(chat_name)
-        chat.handle_message(constants.type_to_bytes(ChatMessageType.INTRODUCE_USER)
-                            + constants.id_to_bytes(user_id))
+        message = MessageBuilder.builder() \
+            .append_type(ChatMessageType.INTRODUCE_USER) \
+            .append_serializable(UserInfo(user_id, ip)) \
+            .build()
+        chat.handle_message(message)
         self.chat_list[chat.get_chat_id()] = chat
-        return chat
 
-    def handle_message(self, message: bytes) -> None:
-        chat_id = constants.to_int(message[:constants.ID_LENGTH])
-        if chat_id in self.chat_list:
-            self.chat_list[chat_id].handle_message(message[constants.ID_LENGTH:])
+    def handle_message(self, message: bytes) -> Optional[bytes]:
+        chat_id = Container[int]()
+
+        message = MessageParser.parser(message) \
+            .append_id(chat_id) \
+            .parse()
+
+        if chat_id.get() in self.chat_list:
+            return self.chat_list[chat_id.get()].handle_message(message)
+
+    def get_invite_link(self, chat_id: int, ip: bytes) -> str:
+        return self.chat_list[chat_id].generate_invite_link(ip)
+
+    def get_chat_list(self):
+        return self.chat_list
+
+    def get_user_id_list(self, chat_id: int) -> List[UserInfo]:
+        return self.chat_list[chat_id].message_handler.get_user_id_list()
+
+    def get_messages(self, chat_id: int) -> List[TextMessage]:
+        return self.chat_list[chat_id].message_handler.get_messages()

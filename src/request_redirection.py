@@ -1,20 +1,26 @@
-from chat_message_type import ChatMessageType
+from enum import IntEnum
+
 from byte_message_type import ByteMessageType
-import constants
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
 
 
 class RequestRedirection:
     def __init__(self):
-        self.handlers = dict((type, []) for type in ChatMessageType)
+        self.handlers = dict((type, []) for type in ByteMessageType)
 
-    def subscribe(self, type: ChatMessageType, handler: callable):
+    def subscribe(self, type: ByteMessageType, handler: callable):
         self.handlers[type].append(handler)
 
-    def handle(self, address: (str, int), message: bytes):
-        type = ByteMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
-        message = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
+    def handle(self, message: bytes):
+        type = Container[IntEnum]()
+
+        message = MessageParser.parser(message) \
+            .append_type(type) \
+            .parse()
+
         try:
-            for handler in self.handlers[type]:
+            for handler in self.handlers[type.get()]:
                 try:
                     return handler(message)
                 except TypeError:

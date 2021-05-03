@@ -1,9 +1,11 @@
 from typing import Optional, Generator, Any
 from dataclasses import dataclass
 from serializable import Serializable
-from message_handler import MessageHandler
-from chat_message_type import ChatMessageType
-import socket
+from src.message_handler import MessageHandler
+from src.chat_message_type import ChatMessageType
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
+from src.message_builders.message_builder import MessageBuilder
 import os
 import base64
 import constants
@@ -38,41 +40,35 @@ class Chat(Serializable):
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def generate_invite_link(self, ip_address: bytes) -> str:
-        link_bytes = base64.b64encode(
-            constants.id_to_bytes(self.chat_id) + self.private_key + ip_address)
-        return link_bytes.decode("utf-8")
+        link = MessageBuilder.builder() \
+            .append_id(self.chat_id) \
+            .append_bytes(self.private_key) \
+            .append_bytes(ip_address) \
+            .build()
+        return base64.b64encode(link).decode("utf-8")
 
-    def handle_message(self, message: bytes) -> bytes:
-        message_type = ChatMessageType(constants.to_int(message[:constants.TYPE_BYTE_SIZE]))
-        message_content = message[constants.TYPE_BYTE_SIZE:]
-        if message_type == ChatMessageType.TEXT_MESSAGE:
-            self.message_handler.handle_text_message(message_content)
-            return bytearray()
+    def handle_message(self, message: bytes) -> Optional[bytes]:
+        message_type = Container[ChatMessageType]()
 
-        if message_type == ChatMessageType.INTRODUCE_USER:
-            self.message_handler.handle_introduce_user(message_content)
-            user_id_list_bytes = self.get_user_list_message()
-            return user_id_list_bytes
+        message = MessageParser.parser(message) \
+            .append_type(message_type) \
+            .parse()
 
-        if message_type == ChatMessageType.USER_LIST:
-            self.message_handler.handle_user_list(message_content)
-            return bytearray()
+        if message_type.get() == ChatMessageType.TEXT_MESSAGE:
+            self.message_handler.handle_text_message(message)
+            return None
 
-        if message_type == ChatMessageType.GET_CHAT_NAME:
-            return constants.string_to_bytes(self.chat_name)
+        if message_type.get() == ChatMessageType.INTRODUCE_USER:
+            self.message_handler.handle_introduce_user(message)
+            return None
 
-        if message_type == ChatMessageType.GET_TEXT_MESSAGES:
-            pass
-
-    def get_user_list_message(self) -> bytes:
-        user_id_list = self.message_handler.get_user_id_list()
-        user_id_list_bytes = bytearray()
-        for user_info in user_id_list:
-            user_id_list_bytes += constants.id_to_bytes(user_info.user_id)
-        return constants.type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
-
-    def get_introduce_user_message(self, user_id: bytes) -> bytes:
-        return constants.type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
 
     def get_chat_id(self) -> int:
         return self.chat_id
