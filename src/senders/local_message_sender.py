@@ -1,9 +1,11 @@
+from dataclasses import dataclass
 from typing import Optional, Callable, Dict, List, Tuple
 from src.senders.message_sender import MessageSender
 import threading
 
 
-class RequestsInfo:
+@dataclass
+class RequestInfo:
     def __init__(self, target_ip: bytes, message: bytes, sender_thread: Optional[threading.Thread]):
         self.target_ip = target_ip
         self.message = message
@@ -19,7 +21,7 @@ class LocalMessageSender(MessageSender):
                  on_long_polling_response_received: Callable[[bytes], None]) -> None:
         super().__init__(ip, on_message_received, on_request_received, on_long_polling_response_received)
 
-        self.requests: List[RequestsInfo] = []
+        self.requests: List[RequestInfo] = []
         self.answers: Dict[threading.Thread, bytes] = {}
 
         self.long_polling_thread = threading.Thread(target=self._send_long_polling_requests)
@@ -37,7 +39,7 @@ class LocalMessageSender(MessageSender):
         return answer
 
     def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
-        self.requests.append(RequestsInfo(target_ip, request, None))
+        self.requests.append(RequestInfo(target_ip, request, None))
 
     def _send_long_polling_requests(self) -> None:
         while True:

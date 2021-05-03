@@ -46,6 +46,8 @@ class SocketMessageSender(MessageSender):
 
     def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
         current_socket = self._send_request_message(target_ip, request)
+        if current_socket is None:
+            return
         self.long_polling_sockets[current_socket] = (target_ip, request)
 
     def _send_request_message(self, target_ip: bytes, request: bytes) -> socket:
@@ -75,6 +77,8 @@ class SocketMessageSender(MessageSender):
 
                 self.long_polling_sockets.pop(current_socket)
                 new_socket = self._send_request_message(target_ip, request)
+                if new_socket is None:
+                    continue
                 self.long_polling_sockets[new_socket] = (target_ip, request)
 
     @staticmethod
