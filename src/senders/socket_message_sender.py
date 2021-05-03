@@ -50,7 +50,7 @@ class SocketMessageSender(MessageSender):
             return
         self.long_polling_sockets[current_socket] = (target_ip, request)
 
-    def _send_request_message(self, target_ip: bytes, request: bytes) -> socket:
+    def _send_request_message(self, target_ip: bytes, request: bytes) -> Optional[socket]:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return None

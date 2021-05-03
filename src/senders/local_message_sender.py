@@ -6,10 +6,9 @@ import threading
 
 @dataclass
 class RequestInfo:
-    def __init__(self, target_ip: bytes, message: bytes, sender_thread: Optional[threading.Thread]):
-        self.target_ip = target_ip
-        self.message = message
-        self.sender_thread = sender_thread
+    target_ip: bytes
+    message: bytes
+    sender_thread: Optional[threading.Thread]
 
 
 class LocalMessageSender(MessageSender):
@@ -23,6 +22,7 @@ class LocalMessageSender(MessageSender):
 
         self.requests: List[RequestInfo] = []
         self.answers: Dict[threading.Thread, bytes] = {}
+        self.is_listening = True
 
         self.long_polling_thread = threading.Thread(target=self._send_long_polling_requests)
         self.long_polling_thread.start()
@@ -42,7 +42,7 @@ class LocalMessageSender(MessageSender):
         self.requests.append(RequestInfo(target_ip, request, None))
 
     def _send_long_polling_requests(self) -> None:
-        while True:
+        while self.is_listening:
             for index, request_info in enumerate(self.requests):
                 if request_info.sender_thread is None:
                     self.requests[index].sender_thread = threading.Thread(target=self.send_request,
@@ -57,4 +57,5 @@ class LocalMessageSender(MessageSender):
                 self.requests[index].sender_thread = None
 
     def __del__(self) -> None:
+        self.is_listening = False
         self.long_polling_thread.join()
