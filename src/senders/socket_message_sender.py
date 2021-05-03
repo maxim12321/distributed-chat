@@ -1,7 +1,7 @@
 import select
 import socket
 import threading
-from typing import Callable, Optional, Dict
+from typing import Callable, Optional, Dict, Tuple
 
 from src import constants
 from src.message_builders.message_builder import MessageBuilder
@@ -18,7 +18,7 @@ class SocketMessageSender(MessageSender):
                  on_long_polling_response_received: Callable[[bytes], None]) -> None:
         super().__init__(ip, on_message_received, on_request_received, on_long_polling_response_received)
 
-        self.long_polling_sockets: Dict[socket, (bytes, bytes)] = {}
+        self.long_polling_sockets: Dict[socket, Tuple[bytes, bytes]] = {}
         self.long_polling_thread = threading.Thread(target=self._long_polling_requests)
         self.long_polling_thread.start()
 
@@ -37,7 +37,18 @@ class SocketMessageSender(MessageSender):
 
         sending_socket.send(message)
 
-    def send_request_message(self, target_ip: bytes, request: bytes) -> socket:
+    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+        sending_socket = self._send_request_message(target_ip, request)
+        if sending_socket is None:
+            return None
+
+        return self._receive_message(sending_socket)
+
+    def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
+        current_socket = self._send_request_message(target_ip, request)
+        self.long_polling_sockets[current_socket] = (target_ip, request)
+
+    def _send_request_message(self, target_ip: bytes, request: bytes) -> socket:
         sending_socket = self._connect(target_ip)
         if sending_socket is None:
             return None
@@ -49,20 +60,9 @@ class SocketMessageSender(MessageSender):
         sending_socket.send(request)
         return sending_socket
 
-    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
-        sending_socket = self.send_request_message(target_ip, request)
-        if sending_socket is None:
-            return None
-
-        return self._receive_message(sending_socket)
-
-    def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
-        current_socket = self.send_request_message(target_ip, request)
-        self.long_polling_sockets[current_socket] = (target_ip, request)
-
     def _long_polling_requests(self) -> None:
-        while True:
-            read_sockets, write_sockets, error_sockets = select.select(self.long_polling_sockets.keys(), [], [])
+        while self.is_listening:
+            read_sockets, *_ = select.select(self.long_polling_sockets.keys(), [], [])
 
             for current_socket in read_sockets:
                 target_ip, request = self.long_polling_sockets[current_socket]
@@ -74,7 +74,7 @@ class SocketMessageSender(MessageSender):
                 self.on_long_polling_response_received(answer)
 
                 self.long_polling_sockets.pop(current_socket)
-                new_socket = self.send_request_message(target_ip, request)
+                new_socket = self._send_request_message(target_ip, request)
                 self.long_polling_sockets[new_socket] = (target_ip, request)
 
     @staticmethod
@@ -90,8 +90,7 @@ class SocketMessageSender(MessageSender):
 
         return None
 
-    @staticmethod
-    def _receive_message(message_socket: socket) -> Optional[bytes]:
+    def _receive_message(self, message_socket: socket) -> Optional[bytes]:
         message_socket.settimeout(constants.MESSAGE_TIMEOUT)
 
         try:
@@ -99,6 +98,9 @@ class SocketMessageSender(MessageSender):
 
             if message_length == 0:
                 message_socket.close()
+
+                if message_socket in self.long_polling_sockets.keys():
+                    self.long_polling_sockets.pop(message_socket)
                 return None
             return message_socket.recv(message_length)
 
