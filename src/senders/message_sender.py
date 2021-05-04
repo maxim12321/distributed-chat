@@ -4,25 +4,26 @@ from typing import Callable, Optional
 
 class MessageSender(ABC):
     @abstractmethod
-    def __init__(self, ip: bytes,
+    def __init__(self, ip: bytes, port: int,
                  on_message_received: Callable[[bytes], None],
                  on_request_received: Callable[[bytes], bytes],
                  on_long_polling_response_received: Callable[[bytes], None]) -> None:
         self.ip = ip
+        self.port = port
         self.on_message_received = on_message_received
         self.on_request_received = on_request_received
         self.on_long_polling_response_received = on_long_polling_response_received
 
     @abstractmethod
-    def send_message(self, target_ip: bytes, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, target_port: int, message: bytes) -> None:
         pass
 
     @abstractmethod
-    def send_request(self, target_ip: bytes, request: bytes) -> Optional[bytes]:
+    def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
         pass
 
     @abstractmethod
-    def add_long_polling_request(self, target_ip: bytes, request: bytes) -> None:
+    def add_long_polling_request(self, target_ip: bytes, target_port: int, request: bytes) -> None:
         pass
 
     def handle_message(self, message: bytes) -> None:
