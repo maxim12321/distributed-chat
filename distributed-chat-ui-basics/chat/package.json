@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "antd": "^4.15.0",
+    "classnames": "^2.3.1",
+    "node-sass": "^5.0.0"
+  }
+}

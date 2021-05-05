@@ -1,12 +1,16 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from "react";
+import { Route } from "react-router-dom";
 
-function App() {
-  return (
-    <div className="App">
-      <h1> React is running from Django server </h1>
-    </div>
-  );
+import { Login, Home } from "../src/pages";
+
+class App extends Component {
+  render() {
+    return (
+      <div className="wrapper">
+        <Route exact path="/" component={ Home } />
+      </div>
+    );
+  }
 }
 
 export default App;
