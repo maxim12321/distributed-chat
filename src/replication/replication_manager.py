@@ -1,4 +1,6 @@
 from typing import List, Optional, Tuple
+
+from src import constants
 from src.replication.info_key import InfoKey
 from src.replication.replication_info import ReplicationInfo
 from src.replication.replication_data import ReplicationData
@@ -6,8 +8,6 @@ from src.replication.replication_data import ReplicationData
 
 class ReplicationManager:
     def __init__(self):
-        self.REPLICATION_COEFFICIENT = 5
-
         self.info = ReplicationInfo()
         self.data = ReplicationData()
 
@@ -22,11 +22,11 @@ class ReplicationManager:
         return self.info
 
     def set_data(self, key: InfoKey, data: bytes) -> None:
-        self.info.add_info(key, self.REPLICATION_COEFFICIENT)
+        self.info.add_info(key, constants.REPLICATION_FACTOR)
         self.data.set_data(key, data)
 
     def append_data(self, key: InfoKey, data: bytes) -> None:
-        self.info.add_info(key, self.REPLICATION_COEFFICIENT)
+        self.info.add_info(key, constants.REPLICATION_FACTOR)
         self.data.append_data(key, data)
 
     def drop_data_with_id_inside(self, left_id: int, right_id: int) -> None:
@@ -36,7 +36,7 @@ class ReplicationManager:
 
     # Update all values, for that self became successor
     def move_all_from_predecessor(self) -> Tuple[ReplicationInfo, ReplicationData]:
-        incremented_keys = self.info.increment_all_equal_to(self.REPLICATION_COEFFICIENT - 1)
+        incremented_keys = self.info.increment_all_equal_to(constants.REPLICATION_FACTOR - 1)
         return self.info.get_info_by_keys(incremented_keys), self.data.get_replication_data(incremented_keys)
 
     def get_info_to_update(self, new_info: ReplicationInfo) -> ReplicationInfo:
@@ -67,9 +67,9 @@ class ReplicationManager:
     # Updates info and data, removes unnecessary, returns info, containing all updated values, and corresponding data
     def set(self, new_info: ReplicationInfo, new_data: ReplicationData) -> Tuple[ReplicationInfo, ReplicationData]:
         updated_info = self.info.get_info_to_update(new_info)
-        keys_to_remove = self._remove_keys_from_info(new_info)
+        keys_to_remove = self._remove_keys_from_info(updated_info)
 
-        self.info.update_info(updated_info)
+        self.info.update_info(new_info)
         self.data.update_data(new_data)
 
         self.data.remove_data(keys_to_remove)
