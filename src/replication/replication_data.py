@@ -1,9 +1,10 @@
 from typing import Dict, List, Optional
+
 from src.replication.info_key import InfoKey
 
 
 class ReplicationData:
-    def __init__(self):
+    def __init__(self) -> None:
         self.data: Dict[InfoKey, List[bytes]] = dict()
 
     def set_data(self, key: InfoKey, value: bytes) -> None:

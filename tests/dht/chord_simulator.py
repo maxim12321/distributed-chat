@@ -72,6 +72,13 @@ class ChordSimulator:
 
         return count
 
+    def get_nodes_replicating_key(self, key: InfoKey) -> List[ChordNode]:
+        nodes: List[ChordNode] = list()
+        for node in self.nodes.values():
+            if node.get_value(key) is not None:
+                nodes.append(node)
+        return nodes
+
     def set_random_value(self) -> InfoKey:
         random_key = InfoKey(random.randint(0, 1000), random.randint(0, self.module - 1))
         random_value = os.urandom(10)
@@ -103,6 +110,13 @@ class ChordSimulator:
         if self.count_replicas(key) != constants.REPLICATION_FACTOR \
                 or self.get_replication_coefficients(key) != target_replication:
             print(f"Error! Replicas: {self.count_replicas(key)}")
+            print(self.get_replication_coefficients(key))
+
+            self.print_replication()
+
+            print(f"\nKey {key} replication:")
+            for node in self.get_nodes_replicating_key(key):
+                print(f"Node {node.node_info.node_id} replica: {node.get_replication_info().get_info_by_keys([key])}")
 
             print(f"{self._get_successor(key.data_id).node_info.node_id} successors:"
                   f"{self._get_successor(key.data_id).successor_list}")
@@ -119,7 +133,7 @@ class ChordSimulator:
         values: List[int] = list()
         for node in self.nodes.values():
             if node.get_value(key) is not None:
-                values.append(node.replication_manager.get_info().get_value(key))
+                values.append(node.replication_manager.get_info().get_value(key).current_index)
         return sorted(values)
 
     def check_random_node(self) -> bool:
@@ -130,11 +144,32 @@ class ChordSimulator:
 
         real_successor = self.request_sender.get_real_successor((target_id + 1) % self.module)
 
-        # print(f"Searching for successor of id={target_id}...")
         if successor != real_successor:
             print(f"Incorrect! Got id={successor.node_id}, but id={real_successor.node_id} expected")
             return False
 
+        return True
+
+    def check_node_successors(self) -> bool:
+        for node in self.nodes.values():
+            next_id = (node.node_info.node_id + 1) % self.module
+            next_node = self.request_sender.get_real_successor(next_id)
+
+            if node.get_next_node().node_id != next_node.node_id:
+                print(f"{node.node_info.node_id}'s successor is incorrect! Got {node.successor.node_id}, "
+                      f"but {next_node.node_id} expected")
+                return False
+        return True
+
+    def check_node_predecessors(self) -> bool:
+        for node in self.nodes.values():
+            next_id = self.request_sender.get_real_successor((node.node_info.node_id + 1) % self.module).node_id
+            next_node = self.nodes[next_id]
+
+            if next_node.get_previous_node().node_id != node.node_info.node_id:
+                print(f"{next_id}'s predecessor is incorrect! Got {next_node.predecessor.node_id}, "
+                      f"but {node.node_info.node_id} expected")
+                return False
         return True
 
     def check_all_node_fingers(self) -> bool:
@@ -148,3 +183,8 @@ class ChordSimulator:
         for node_id in self.nodes:
             print(f"-- (ID = {node_id}): {self.nodes[node_id]}")
         print()
+
+    def print_replication(self) -> None:
+        print(f"Chord ({len(self.nodes)} nodes) replication info:")
+        for node_id in self.nodes:
+            print(f"-- (ID = {node_id}): {self.nodes[node_id].get_replication_info()}")

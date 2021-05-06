@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 
 from src import constants
 from src.replication.info_key import InfoKey
+from src.replication.info_value import InfoValue
 from src.replication.replication_info import ReplicationInfo
 from src.replication.replication_data import ReplicationData
 
@@ -21,12 +22,12 @@ class ReplicationManager:
     def get_info(self) -> ReplicationInfo:
         return self.info
 
-    def set_data(self, key: InfoKey, data: bytes) -> None:
-        self.info.add_info(key, constants.REPLICATION_FACTOR)
+    def set_data(self, current_id: int, key: InfoKey, data: bytes) -> None:
+        self.info.add_info(key, InfoValue(constants.REPLICATION_FACTOR, current_id))
         self.data.set_data(key, data)
 
-    def append_data(self, key: InfoKey, data: bytes) -> None:
-        self.info.add_info(key, constants.REPLICATION_FACTOR)
+    def append_data(self, current_id: int, key: InfoKey, data: bytes) -> None:
+        self.info.add_info(key, InfoValue(constants.REPLICATION_FACTOR, current_id))
         self.data.append_data(key, data)
 
     def drop_data_with_id_inside(self, left_id: int, right_id: int) -> None:
@@ -34,52 +35,50 @@ class ReplicationManager:
         self.info.remove_keys(keys_to_remove)
         self.data.remove_data(keys_to_remove)
 
+    def update_first_nodes(self, current_id: int) -> None:
+        self.info.update_first_nodes(constants.REPLICATION_FACTOR, current_id)
+
     # Update all values, for that self became successor
-    def move_all_from_predecessor(self) -> Tuple[ReplicationInfo, ReplicationData]:
+    def move_all_from_predecessor(self, current_id: int) -> Tuple[ReplicationInfo, ReplicationData]:
         incremented_keys = self.info.increment_all_equal_to(constants.REPLICATION_FACTOR - 1)
+        self.update_first_nodes(current_id)
+
         return self.info.get_info_by_keys(incremented_keys), self.data.get_replication_data(incremented_keys)
 
-    def get_info_to_update(self, new_info: ReplicationInfo) -> ReplicationInfo:
-        return self.info.get_info_to_update(new_info)
+    # Add info, excluding overlapping keys, and remove unnecessary replications
+    def update_replication_info(self, current_id: int, new_info: ReplicationInfo) -> ReplicationInfo:
+        overlapping_keys = new_info.get_keys_with_id(current_id)
+        new_info.remove_keys(overlapping_keys)
+
+        info_to_update = self.info.get_info_to_update(new_info)
+        self.info.update_info(new_info)
+
+        keys_to_remove = self.info.get_keys_to_remove()
+        self.info.remove_keys(keys_to_remove)
+        self.data.remove_data(keys_to_remove)
+
+        return info_to_update
+
+    def update_replication_data(self, new_data: ReplicationData) -> None:
+        self.data.update_data(new_data)
+
+    def update_replication(self, current_id: int,
+                           new_info: ReplicationInfo,
+                           new_data: ReplicationData) -> Tuple[ReplicationInfo, ReplicationData]:
+        self.update_replication_data(new_data)
+
+        updated_info = self.update_replication_info(current_id, new_info)
+        return updated_info, self.data.get_replication_data(updated_info.get_keys())
+
+    def set_replication(self, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+        self.info.update_info(new_info)
+        self.data.update_data(new_data)
 
     def get_key_replication(self, key: InfoKey) -> Tuple[ReplicationInfo, ReplicationData]:
         return self.info.get_info_by_keys([key]), self.data.get_replication_data([key])
 
     def get_data_by_keys(self, keys: List[InfoKey]) -> ReplicationData:
         return self.data.get_replication_data(keys)
-
-    # Updates self.info from new_info, removes unnecessary data, returns ReplicationInfo, containing all updated values
-    def update_info(self, new_info: ReplicationInfo) -> ReplicationInfo:
-        new_info.decrement_values()
-        updated_info = self.info.get_info_to_update(new_info)
-        self.info.update_info(updated_info)
-
-        keys_to_remove = self._remove_keys_from_info(updated_info)
-        self.info.remove_keys(keys_to_remove)
-        self.data.remove_data(keys_to_remove)
-
-        return updated_info
-
-    def update(self, new_info: ReplicationInfo, new_data: ReplicationData) -> Tuple[ReplicationInfo, ReplicationData]:
-        new_info.decrement_values()
-        return self.set(new_info, new_data)
-
-    # Updates info and data, removes unnecessary, returns info, containing all updated values, and corresponding data
-    def set(self, new_info: ReplicationInfo, new_data: ReplicationData) -> Tuple[ReplicationInfo, ReplicationData]:
-        updated_info = self.info.get_info_to_update(new_info)
-        keys_to_remove = self._remove_keys_from_info(updated_info)
-
-        self.info.update_info(new_info)
-        self.data.update_data(new_data)
-
-        self.data.remove_data(keys_to_remove)
-        return updated_info, self.data.get_replication_data(updated_info.get_keys())
-
-    @staticmethod
-    def _remove_keys_from_info(new_info: ReplicationInfo) -> List[InfoKey]:
-        keys_to_remove = new_info.get_keys_to_remove()
-        new_info.remove_keys(keys_to_remove)
-        return keys_to_remove
 
     def __str__(self) -> str:
         return f"Info={self.info},\nData={self.data}.\n"

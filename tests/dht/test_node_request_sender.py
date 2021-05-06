@@ -1,5 +1,6 @@
 import random
-from typing import List, Optional
+from copy import deepcopy
+from typing import List, Optional, Dict
 
 from src.dht.chord_node import ChordNode
 from src.dht.node_info import NodeInfo
@@ -12,7 +13,7 @@ from src.replication.replication_data import ReplicationData
 class TestNodeRequestSender(NodeRequestSender):
     def __init__(self, module: int):
         self.module = module
-        self.nodes = dict()
+        self.nodes: Dict[int, ChordNode] = dict()
 
         self.successors: List[Optional[ChordNode]] = [None] * module
 
@@ -22,62 +23,62 @@ class TestNodeRequestSender(NodeRequestSender):
     def notify_node(self, node: NodeInfo, possible_predecessor: NodeInfo) -> None:
         if node.node_id not in self.nodes.keys():
             return
-        self.nodes[node.node_id].update_previous_node(possible_predecessor)
+        self.nodes[node.node_id].update_previous_node(deepcopy(possible_predecessor))
 
     def request_successor(self, node: NodeInfo, target_id: int) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].find_successor(target_id)
+        return deepcopy(self.nodes[node.node_id].find_successor(target_id))
 
     def request_next_node(self, node: NodeInfo) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_next_node()
+        return deepcopy(self.nodes[node.node_id].get_next_node())
 
     def request_previous_node(self, node: NodeInfo) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_previous_node()
+        return deepcopy(self.nodes[node.node_id].get_previous_node())
 
     def request_preceding_finger(self, node: NodeInfo, target_id: int) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].find_preceding_finger(target_id)
+        return deepcopy(self.nodes[node.node_id].find_preceding_finger(target_id))
 
     def request_successor_list(self, node: NodeInfo) -> Optional[List[NodeInfo]]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_successor_list()
+        return deepcopy(self.nodes[node.node_id].get_successor_list())
 
     def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> None:
         if node.node_id not in self.nodes.keys():
             return
-        self.nodes[node.node_id].propose_finger_update(node_to_update, finger_number)
+        self.nodes[node.node_id].propose_finger_update(deepcopy(node_to_update), finger_number)
 
     def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> None:
         if node.node_id not in self.nodes.keys():
             return
-        self.nodes[node.node_id].update_previous_node(node_to_propose)
+        self.nodes[node.node_id].update_previous_node(deepcopy(node_to_propose))
 
     def request_replication_info(self, node: NodeInfo) -> Optional[ReplicationInfo]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_replication_info()
+        return deepcopy(self.nodes[node.node_id].get_replication_info())
 
     def request_data_by_keys(self, node: NodeInfo, keys: List[InfoKey]) -> Optional[ReplicationData]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_data_by_keys(keys)
+        return deepcopy(self.nodes[node.node_id].get_data_by_keys(deepcopy(keys)))
 
     def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> None:
         if node.node_id not in self.nodes.keys():
             return
-        return self.nodes[node.node_id].update_replication_info(new_info)
+        self.nodes[node.node_id].update_replication_info(deepcopy(new_info))
 
     def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
         if node.node_id not in self.nodes.keys():
             return
-        return self.nodes[node.node_id].update_replication(new_info, new_data)
+        self.nodes[node.node_id].update_replication(deepcopy(new_info), deepcopy(new_data))
 
     # Returns node, such that node.id >= target_id, used just for validating result in simulator
     def get_real_successor(self, target_id) -> NodeInfo:
