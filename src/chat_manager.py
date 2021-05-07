@@ -23,7 +23,9 @@ class ChatManager:
         chat.create(chat_name)
         message = MessageBuilder.builder() \
             .append_type(ChatMessageType.INTRODUCE_USER) \
+            .begin_encrypted() \
             .append_serializable(UserInfo(user_id, ip)) \
+            .encrypt(chat.private_key) \
             .build()
         chat.handle_message(message)
         self.chat_list[chat.get_chat_id()] = chat
@@ -78,3 +80,9 @@ class ChatManager:
             .parse()
 
         return chat
+
+    def build_send_text_message(self, chat_id: int, text_message: TextMessage) -> bytes:
+        return self.chat_list[chat_id].build_send_text_message(text_message)
+
+    def build_introduce_message(self, chat_id: int, user_info: UserInfo) -> bytes:
+        return self.chat_list[chat_id].build_introduce_message(user_info)

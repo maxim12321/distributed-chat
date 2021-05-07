@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Generator, List, Optional
 
 from src import constants
+from src.byte_message_type import ByteMessageType
 from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_handler import MessageHandler
@@ -57,11 +58,11 @@ class Chat(Serializable):
             .parse()
 
         if message_type.get() == ChatMessageType.TEXT_MESSAGE:
-            self.message_handler.handle_text_message(message)
+            self.message_handler.handle_text_message(message, self.private_key)
             return None
 
         if message_type.get() == ChatMessageType.INTRODUCE_USER:
-            self.message_handler.handle_introduce_user(message)
+            self.message_handler.handle_introduce_user(message, self.private_key)
             return None
 
         if message_type.get() == ChatMessageType.GET_CHAT:
@@ -83,3 +84,23 @@ class Chat(Serializable):
 
     def get_message_list(self) -> List[TextMessage]:
         return self.message_handler.get_message_list()
+
+    def build_send_text_message(self, text_message: TextMessage) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.TEXT_MESSAGE) \
+            .begin_encrypted() \
+            .append_serializable(text_message) \
+            .encrypt(self.private_key) \
+            .build()
+
+    def build_introduce_message(self, user_info: UserInfo) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.INTRODUCE_USER) \
+            .begin_encrypted() \
+            .append_serializable(user_info) \
+            .encrypt(self.private_key) \
+            .build()

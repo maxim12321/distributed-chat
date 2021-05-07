@@ -26,17 +26,21 @@ class MessageHandler(Serializable):
         for user_info in data["user_info_list"]:
             self.users.append(UserInfo.from_dict(user_info))
 
-    def handle_text_message(self, message: bytes) -> None:
+    def handle_text_message(self, message: bytes, private_key: bytes) -> None:
         text_message = TextMessage()
         MessageParser.parser(message) \
+            .begin_encrypted(private_key) \
             .append_serializable(text_message) \
+            .encrypt() \
             .parse()
         self.messages.append(text_message)
 
-    def handle_introduce_user(self, message_id: bytes) -> None:
+    def handle_introduce_user(self, message_id: bytes, private_key: bytes) -> None:
         user_info = UserInfo()
         MessageParser.parser(message_id) \
+            .begin_encrypted(private_key) \
             .append_serializable(user_info) \
+            .encrypt() \
             .parse()
         self.users.append(user_info)
 

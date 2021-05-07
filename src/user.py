@@ -36,14 +36,6 @@ class User:
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id, self.ip)
 
-    def _build_introduce_message(self, chat_id: int) -> bytes:
-        return MessageBuilder.builder() \
-            .append_type(ByteMessageType.CHAT_MESSAGE) \
-            .append_id(chat_id) \
-            .append_type(ChatMessageType.INTRODUCE_USER) \
-            .append_serializable(UserInfo(self.user_id, self.ip)) \
-            .build()
-
     @staticmethod
     def _build_get_chat_message(chat_id: int) -> bytes:
         return MessageBuilder.builder() \
@@ -65,22 +57,14 @@ class User:
         chat = self.chat_manager.parse_chat_data(chat_data, private_key)
         self.chat_manager.add_chat(chat)
 
-        message = self._build_introduce_message(chat_id)
+        message = self.chat_manager.build_introduce_message(chat_id, UserInfo(self.user_id, self.ip))
         self._broadcast_message(chat_id, message)
         # Then send myself
         self.byte_message_socket.send_message(self.ip, message)
 
-    def _build_send_text_message(self, chat_id: int, data: str) -> bytes:
-        data = data.encode("utf-8")
-        return MessageBuilder.builder() \
-            .append_type(ByteMessageType.CHAT_MESSAGE) \
-            .append_id(chat_id) \
-            .append_type(ChatMessageType.TEXT_MESSAGE) \
-            .append_serializable(TextMessage(self.user_id, data)) \
-            .build()
-
     def send_text_message(self, chat_id: int, data: str) -> None:
-        message = self._build_send_text_message(chat_id, data)
+        data = data.encode("utf-8")
+        message = self.chat_manager.build_send_text_message(chat_id, TextMessage(self.user_id, data))
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:
