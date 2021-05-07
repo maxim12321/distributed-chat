@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Generator, Any, Optional
 from src import constants
-from serializable import Serializable
+from src.serializable import Serializable
 
 
 @dataclass
@@ -20,3 +20,9 @@ class UserInfo(Serializable):
     def load_from_dict(self, data_dict: dict) -> None:
         self.user_id = data_dict["user_id"]
         self.ip = data_dict["ip"]
+
+    @staticmethod
+    def from_dict(data: dict) -> 'UserInfo':
+        user_info = UserInfo()
+        user_info.load_from_dict(data)
+        return user_info

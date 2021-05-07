@@ -1,38 +1,33 @@
-import base64
 import os
+from typing import List
 
 from src import constants
-from src.senders.local_message_sender import LocalMessageSender
-from src.message_redirection import MessageRedirection
-from src.request_redirection import RequestRedirection
 from src.byte_message_type import ByteMessageType
-from src.chat_message_type import ChatMessageType
-from src.chat_manager import ChatManager
 from src.chat import Chat
-from src.message_parsers.container import Container
-from src.message_parsers.message_parser import MessageParser
+from src.chat_manager import ChatManager
+from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
-from src.user_info import UserInfo
+from src.message_redirection import MessageRedirection
+from src.senders.local_message_sender import LocalMessageSender
 from src.text_message import TextMessage
-from typing import List
+from src.user_info import UserInfo
 
 
 class User:
-    def __init__(self):
+
+    def __init__(self, username: str):
         self.ip = os.urandom(3)
         self.user_id = constants.random_int(constants.ID_LENGTH)
-        self.username = "Squirrel"
+        self.username = username
 
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
-        self.request_redirection = RequestRedirection()
         self.byte_message_socket = LocalMessageSender(self.ip, self.message_redirection.handle,
-                                                      self.request_redirection.handle)
+                                                      self.message_redirection.handle)
 
-        self.subscribe()
+        self._configure_message_redirection()
 
-    def subscribe(self) -> None:
-        self.request_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
+    def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
 
     def create_chat(self, chat_name: str) -> None:
@@ -41,74 +36,70 @@ class User:
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id, self.ip)
 
-    def join_chat_by_link(self, invite_link: str) -> None:
-        link = base64.b64decode(invite_link)
-
-        chat_id: Container[int] = Container()
-        private_key: Container[bytes] = Container()
-        ip: Container[bytes] = Container()
-
-        MessageParser.parser(link) \
-            .append_id(chat_id) \
-            .append_bytes(private_key) \
-            .append_bytes(ip) \
-            .parse()
-
-        message = MessageBuilder.builder() \
+    def _build_introduce_message(self, chat_id: int) -> bytes:
+        return MessageBuilder.builder() \
             .append_type(ByteMessageType.CHAT_MESSAGE) \
-            .append_id(chat_id.get()) \
+            .append_id(chat_id) \
+            .append_type(ChatMessageType.INTRODUCE_USER) \
+            .append_serializable(UserInfo(self.user_id, self.ip)) \
+            .build()
+
+    @staticmethod
+    def _build_get_chat_message(chat_id: int) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(chat_id) \
             .append_type(ChatMessageType.GET_CHAT) \
             .build()
 
-        chat_data = self.byte_message_socket.send_request(ip.get(), message)
-        chat = Chat()
-
-        MessageParser.parser(chat_data) \
-            .begin_encrypted(private_key.get()) \
-            .append_serializable(chat) \
-            .encrypt() \
-            .parse()
-
-        message = MessageBuilder.builder() \
-            .append_type(ChatMessageType.INTRODUCE_USER) \
-            .append_serializable(UserInfo(self.user_id, self.ip)) \
-            .build()
-
-        chat.handle_message(message)
-
-        message = MessageBuilder.builder() \
-            .append_type(ByteMessageType.CHAT_MESSAGE) \
-            .append_id(chat_id.get()) \
-            .append_type(ChatMessageType.INTRODUCE_USER) \
-            .append_serializable(UserInfo(self.user_id, self.ip)) \
-            .build()
-
-        addresses = chat.message_handler.get_user_id_list()
-
+    def _broadcast_message(self, chat_id: int, message: bytes) -> None:
+        addresses = self.chat_manager.get_user_id_list(chat_id)
         for address in addresses:
             self.byte_message_socket.send_message(address.ip, message)
 
+    def join_chat_by_link(self, invite_link: str) -> None:
+        chat_id, private_key, ip = self.chat_manager.parse_invite_link(invite_link)
+
+        message = self._build_get_chat_message(chat_id)
+        chat_data = self.byte_message_socket.send_request(ip, message)
+        chat = self.chat_manager.parse_chat_data(chat_data, private_key)
         self.chat_manager.add_chat(chat)
 
-    def send_text_message(self, chat_id: int, data: str) -> None:
+        message = self._build_introduce_message(chat_id)
+        self._broadcast_message(chat_id, message)
+        # Then send myself
+        self.byte_message_socket.send_message(self.ip, message)
+
+    def _build_send_text_message(self, chat_id: int, data: str) -> bytes:
         data = data.encode("utf-8")
-        message = MessageBuilder.builder() \
+        return MessageBuilder.builder() \
             .append_type(ByteMessageType.CHAT_MESSAGE) \
             .append_id(chat_id) \
             .append_type(ChatMessageType.TEXT_MESSAGE) \
             .append_serializable(TextMessage(self.user_id, data)) \
             .build()
 
-        addresses = self.chat_manager.get_user_id_list(chat_id)
+    def send_text_message(self, chat_id: int, data: str) -> None:
+        message = self._build_send_text_message(chat_id, data)
+        self._broadcast_message(chat_id, message)
 
-        for address in addresses:
-            self.byte_message_socket.send_message(address.ip, message)
+    def get_chat_id_list(self) -> List[int]:
+        return self.chat_manager.get_chat_id_list()
 
-    def get_chat_list(self):
-        return self.chat_manager.get_chat_list()
+    def get_chat_info(self, chat_id: int) -> Chat:
+        return self.chat_manager.get_chat_info(chat_id)
 
     def get_user_id_list(self, chat_id: int) -> List[UserInfo]:
         return self.chat_manager.get_user_id_list(chat_id)
 
-    def get_messages(self, chat_id: int) -> List[TextMessage]:
-        return self.chat_manager.get_messages(chat_id)
+    def get_message_list(self, chat_id: int) -> List[TextMessage]:
+        return self.chat_manager.get_message_list(chat_id)
+
+    def get_username(self) -> str:
+        return self.username
+
+    def get_ip(self) -> bytes:
+        return self.ip
+
+    def get_id(self) -> int:
+        return self.user_id

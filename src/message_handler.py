@@ -1,12 +1,13 @@
-from serializable import Serializable
-from text_message import TextMessage
-from user_info import UserInfo
 from typing import List
-import constants
+
 from src.message_parsers.message_parser import MessageParser
+from src.serializable import Serializable
+from src.text_message import TextMessage
+from src.user_info import UserInfo
 
 
 class MessageHandler(Serializable):
+
     def __init__(self):
         self.users: List[UserInfo] = []
         self.messages: List[TextMessage] = []
@@ -21,9 +22,9 @@ class MessageHandler(Serializable):
         self.messages.clear()
         self.users.clear()
         for message in data["message_list"]:
-            self.messages.append(TextMessage(message["sender_id"], message["context"]))
+            self.messages.append(TextMessage.from_dict(message))
         for user_info in data["user_info_list"]:
-            self.users.append(UserInfo(user_info["user_id"], user_info["ip"]))
+            self.users.append(UserInfo.from_dict(user_info))
 
     def handle_text_message(self, message: bytes) -> None:
         text_message = TextMessage()
@@ -42,5 +43,5 @@ class MessageHandler(Serializable):
     def get_user_id_list(self) -> List[UserInfo]:
         return self.users
 
-    def get_messages(self) -> List[TextMessage]:
+    def get_message_list(self) -> List[TextMessage]:
         return self.messages

@@ -1,14 +1,16 @@
-from typing import Optional, Generator, Any
+import os
 from dataclasses import dataclass
-from serializable import Serializable
-from src.message_handler import MessageHandler
+from typing import Any, Generator, List, Optional
+
+from src import constants
 from src.chat_message_type import ChatMessageType
+from src.message_builders.message_builder import MessageBuilder
+from src.message_handler import MessageHandler
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
-from src.message_builders.message_builder import MessageBuilder
-import os
-import base64
-import constants
+from src.text_message import TextMessage
+from src.serializable import Serializable
+from src.user_info import UserInfo
 
 
 @dataclass
@@ -45,7 +47,7 @@ class Chat(Serializable):
             .append_bytes(self.private_key) \
             .append_bytes(ip_address) \
             .build()
-        return base64.b64encode(link).decode("utf-8")
+        return constants.bytes_to_string(link)
 
     def handle_message(self, message: bytes) -> Optional[bytes]:
         message_type = Container[ChatMessageType]()
@@ -72,3 +74,12 @@ class Chat(Serializable):
 
     def get_chat_id(self) -> int:
         return self.chat_id
+
+    def get_chat_name(self) -> str:
+        return self.chat_name
+
+    def get_user_id_list(self) -> List[UserInfo]:
+        return self.message_handler.get_user_id_list()
+
+    def get_message_list(self) -> List[TextMessage]:
+        return self.message_handler.get_message_list()

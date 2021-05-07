@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Generator, Any, Optional
-from src import constants
-from serializable import Serializable
+from typing import Any, Generator, Optional
 
-import constants
+from src import constants
+from src.serializable import Serializable
 
 
 @dataclass
@@ -22,3 +21,9 @@ class TextMessage(Serializable):
     def load_from_dict(self, data_dict: dict) -> None:
         self.sender_id = data_dict["sender_id"]
         self.context = data_dict["context"]
+
+    @staticmethod
+    def from_dict(data: dict) -> 'TextMessage':
+        text_message = TextMessage()
+        text_message.load_from_dict(data)
+        return text_message
