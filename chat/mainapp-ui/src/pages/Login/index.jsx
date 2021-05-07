@@ -1,10 +1,10 @@
 import React from "react";
-import { Form, Input, Checkbox } from "antd";
 import Icon from '@ant-design/icons';
+import { Form, Input, Checkbox } from "antd";
 import { UserOutlined } from '@ant-design/icons';
 
-import { Button, Block } from "../../components";
 import "./Login.scss";
+import { Button, Block } from "../../components";
 
 class Login extends React.Component {
   render() {
