@@ -66,3 +66,19 @@ class NodeRequestSender(ABC):
     def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
         # return node.update_replication(new_info, new_data)
         pass
+
+    @abstractmethod
+    def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
+        pass
+
+    @abstractmethod
+    def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
+        pass
+
+    @abstractmethod
+    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+        pass
+
+    @abstractmethod
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+        pass

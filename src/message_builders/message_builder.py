@@ -1,6 +1,6 @@
 import json
 from enum import IntEnum
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, List
 
 from src import constants
 from src.senders.message_type import MessageType
@@ -27,14 +27,29 @@ class MessageBuilder:
         self.data.extend(value)
         return self
 
-    def append_object(self, value: object) -> 'MessageBuilder':
-        data = json.dumps(value).encode("utf-8")
-        self.append_bytes(data)
+    def append_optional_bytes(self, value: Optional[bytes]) -> 'MessageBuilder':
+        self.data.extend(b'0' if value is None else b'1')
+        if value is not None:
+            self.append_bytes(value)
         return self
 
-    def append_serializable(self, value: Serializable):
+    def append_string(self, value: str) -> 'MessageBuilder':
+        self.append_bytes(value.encode("utf-8"))
+        return self
+
+    def append_object(self, value: object) -> 'MessageBuilder':
+        data = json.dumps(value)
+        self.append_string(data)
+        return self
+
+    def append_serializable(self, value: Serializable) -> 'MessageBuilder':
         data = dict(value)
         self.append_object(data)
+        return self
+
+    def append_serializable_list(self, values: List[Serializable]) -> 'MessageBuilder':
+        value_dicts: List[dict] = [dict(value) for value in values]
+        self.append_object(value_dicts)
         return self
 
     def begin_authenticated(self) -> 'AuthenticatedBuilder':

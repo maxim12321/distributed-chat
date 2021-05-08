@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from src import constants
 from src.dht.node_info import NodeInfo
@@ -11,10 +11,11 @@ from src.replication.replication_manager import ReplicationManager
 
 
 class ChordNode:
-    def __init__(self, id_bit_length: int, node_id: int, request_sender: NodeRequestSender):
+    def __init__(self, id_bit_length: int, node_id: int, node_ip: bytes, node_port: int,
+                 request_sender: NodeRequestSender) -> None:
         self.id_bit_length = id_bit_length
         self.module = 2 ** id_bit_length
-        self.node_info = NodeInfo(node_id)
+        self.node_info = NodeInfo(node_id, node_ip, node_port)
         self.request_sender = request_sender
 
         self.successor: NodeInfo = self.node_info
@@ -26,6 +27,22 @@ class ChordNode:
         self.last_updated_finger = 1
 
         self.replication_manager = ReplicationManager()
+
+    def get_single_data_by_key(self, key: InfoKey) -> Optional[bytes]:
+        data_successor = self.find_successor(key.data_id)
+        return self.request_sender.get_value(data_successor, key)
+
+    def get_all_data_by_key(self, key: InfoKey) -> Optional[List[bytes]]:
+        data_successor = self.find_successor(key.data_id)
+        return self.request_sender.get_all_values(data_successor, key)
+
+    def set_value_by_key(self, key: InfoKey, value: bytes) -> None:
+        data_successor = self.find_successor(key.data_id)
+        self.request_sender.set_value(data_successor, key, value)
+
+    def append_value_by_key(self, key: InfoKey, value: bytes) -> None:
+        data_successor = self.find_successor(key.data_id)
+        self.request_sender.append_value(data_successor, key, value)
 
     # Just for testing
     def get_node_info(self) -> NodeInfo:
@@ -101,7 +118,7 @@ class ChordNode:
     def get_successor_list(self) -> List[NodeInfo]:
         return self.successor_list
 
-    def join(self, other_node: NodeInfo) -> None:
+    def join(self, other_node: Optional[NodeInfo]) -> None:
         self._fill_fingers_with_self()
         if other_node is None:
             return
@@ -185,7 +202,7 @@ class ChordNode:
 
             self.finger_table.append(Finger(start, end, self.node_info))
 
-            start = (start + finger_length) % self.module
+            start = end
             finger_length *= 2
 
         self._set_successor(self.node_info)
@@ -194,7 +211,8 @@ class ChordNode:
     # For i-th finger, finds last node, such that self can be i-th finger of this node
     def _update_other_nodes(self) -> None:
         for i in range(self.id_bit_length):
-            predecessor = self._find_predecessor((self.node_info.node_id - 2 ** i) % self.module)
+            # for i in range(1):
+            predecessor, _ = self._find_predecessor((self.node_info.node_id - 2 ** i) % self.module)
             self.request_sender.propose_finger_update(predecessor, self.node_info, i)
 
     # If node is finger_number's finger, update finger and propose same finger for our predecessor
@@ -211,6 +229,7 @@ class ChordNode:
             else:
                 self.finger_table[finger_number].node = node
 
+            # TODO: Try to send only when it can possibly be
             self.request_sender.propose_finger_update(self.predecessor, node, finger_number)
 
     # Sets fingers, assuming that successor is self.successor in the ring
@@ -230,6 +249,8 @@ class ChordNode:
             last_successor_id = self.finger_table[i].node.node_id
 
         self._set_predecessor(self.request_sender.request_previous_node(successor))
+        self.request_sender.propose_finger_update(self.predecessor, self.node_info, 0)
+
         self.request_sender.propose_predecessor(successor, self.node_info)
 
     # Gets data to replicate from a successor, supposing self.successor is alive and correct, and updates successor info
@@ -241,6 +262,9 @@ class ChordNode:
         # Remove successor's replication, for that self is not a successor
         keys_to_remove = replication_info.get_keys_with_id_inside(self.node_info.node_id, self.successor.node_id)
         replication_info.remove_keys(keys_to_remove)
+
+        if replication_info.get_size() == 0:
+            return
 
         # Get data, associated with appropriate keys
         replication_data = self.request_sender.request_data_by_keys(self.get_next_node(), replication_info.get_keys())
@@ -255,23 +279,25 @@ class ChordNode:
 
     # Returns node: NodeInfo, such that node.id < target_id <= node.successor.id
     def find_successor(self, target_id: int) -> NodeInfo:
-        self.stabilize()
-        preceding_node: NodeInfo = self._find_predecessor(target_id)
+        # self.stabilize()
+        # self._check_possible_successor()
+        self._check_successor()
+        self._update_successor_list()
+        # self._check_predecessor()
 
-        if preceding_node == self.node_info:
-            return self.successor
-        return self.request_sender.request_next_node(preceding_node)
+        _, successor = self._find_predecessor(target_id)
+        return successor
 
     # Returns node: NodeInfo, such that node.id <= target_id < node.successor.id
-    def _find_predecessor(self, target_id: int) -> NodeInfo:
+    def _find_predecessor(self, target_id: int) -> Tuple[NodeInfo, NodeInfo]:
         node = self.node_info
-        node_successor = self.successor
+        node_successor = self.get_next_node()
 
         while not self.is_inside_left(node.node_id, node_successor.node_id, target_id):
             node = self.request_sender.request_preceding_finger(node, target_id)
             node_successor = self.request_sender.request_next_node(node)
 
-        return node
+        return node, node_successor
 
     # Returns farthest node: NodeInfo **from finger_table**, such that id < node.id <= target_id
     def find_preceding_finger(self, target_id: int) -> NodeInfo:
@@ -293,9 +319,10 @@ class ChordNode:
         # If predecessor is not better (predecessor failed), update replication info for data from predecessor
         if not self.is_inside_left(self.predecessor.node_id, self.node_info.node_id, predecessor.node_id):
             info, data = self.replication_manager.move_all_from_predecessor(self.node_info.node_id)
-            info_to_push = info.get_decremented_info()
 
-            self.request_sender.update_replication(self.get_next_node(), info_to_push, data)
+            if info.get_size() > 0:
+                info_to_push = info.get_decremented_info()
+                self.request_sender.update_replication(self.get_next_node(), info_to_push, data)
 
         self.predecessor = predecessor
 
@@ -316,6 +343,9 @@ class ChordNode:
         # Remove keys for data that shouldn't be stored
         keys_to_remove = updated_info.get_keys_to_remove()
         updated_info.remove_keys(keys_to_remove)
+
+        if updated_info.get_size() == 0:
+            return
 
         # Request data for appropriate keys from the predecessor
         replication_data = self.request_sender.request_data_by_keys(self.predecessor, updated_info.get_keys())

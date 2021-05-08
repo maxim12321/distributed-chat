@@ -1,13 +1,23 @@
 from copy import deepcopy
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Generator, Any
 
 from src.replication.info_key import InfoKey
 from src.replication.info_value import InfoValue
+from src.serializable import Serializable
 
 
-class ReplicationInfo:
+class ReplicationInfo(Serializable):
     def __init__(self) -> None:
         self.info: Dict[InfoKey, InfoValue] = dict()
+
+    def __iter__(self) -> Generator[str, Any, None]:
+        for info_key, value in self.info.items():
+            yield str(info_key), dict(value)
+
+    def load_from_dict(self, data: dict) -> None:
+        self.info = {}
+        for key_string, value_dict in data.items():
+            self.info[InfoKey.from_string(key_string)] = InfoValue.from_dict(value_dict)
 
     def add_info(self, key: InfoKey, value: InfoValue) -> None:
         self.info[key] = value

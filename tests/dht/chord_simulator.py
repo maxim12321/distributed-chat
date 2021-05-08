@@ -23,7 +23,10 @@ class ChordSimulator:
         while node_id in self.nodes.keys():
             node_id = random.randint(0, self.module - 1)
 
-        chord_node = ChordNode(self.m, node_id, self.request_sender)
+        self.add_node(node_id)
+
+    def add_node(self, node_id: int) -> None:
+        chord_node = ChordNode(self.m, node_id, b'0', 0, self.request_sender)
 
         self.nodes[node_id] = chord_node
         self.request_sender.add_node(node_id, chord_node)
@@ -144,7 +147,7 @@ class ChordSimulator:
 
         real_successor = self.request_sender.get_real_successor((target_id + 1) % self.module)
 
-        if successor != real_successor:
+        if successor.node_id != real_successor.node_id:
             print(f"Incorrect! Got id={successor.node_id}, but id={real_successor.node_id} expected")
             return False
 

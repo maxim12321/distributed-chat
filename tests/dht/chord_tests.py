@@ -65,7 +65,6 @@ class ChordTests(unittest.TestCase):
         key = self.simulator.set_random_value()
 
         for i in range(1, constants.REPLICATION_FACTOR + 10):
-            self.simulator.print_replication()
             self.assertEqual(min(i, constants.REPLICATION_FACTOR), self.simulator.count_replicas(key))
             self.simulator.add_random_node()
 

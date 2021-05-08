@@ -43,7 +43,17 @@ class SocketMessageSender(MessageSender):
         if sending_socket is None:
             return None
 
-        return self._receive_message(sending_socket)
+        answer = self._receive_message(sending_socket)
+
+        if answer is None:
+            return None
+
+        response: Container[bytes] = Container()
+        MessageParser.parser(answer) \
+            .append_bytes(response) \
+            .parse()
+
+        return response.get()
 
     def add_long_polling_request(self, target_ip: bytes, target_port: int, request: bytes) -> None:
         current_socket = self._send_request_message(target_ip, target_port, request)
@@ -88,18 +98,13 @@ class SocketMessageSender(MessageSender):
     def _connect(target_ip: bytes, target_port: int) -> Optional[socket.socket]:
         destination_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        for _ in range(constants.MAX_CONNECTION_TRIES_COUNT):
-            try:
-                destination_socket.connect((socket.inet_ntoa(target_ip), target_port))
-                return destination_socket
-            except ConnectionRefusedError:
-                continue
-
-        return None
+        try:
+            destination_socket.connect((socket.inet_ntoa(target_ip), target_port))
+            return destination_socket
+        except ConnectionRefusedError:
+            return None
 
     def _receive_message(self, message_socket: socket) -> Optional[bytes]:
-        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
-
         try:
             message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
 
@@ -114,6 +119,10 @@ class SocketMessageSender(MessageSender):
         except socket.timeout:
             return None
 
+    def _handle_connection(self, message_socket: socket.socket) -> None:
+        message = self._receive_message(message_socket)
+        self._process_message(message, message_socket)
+
     def _listen(self) -> None:
         listening_socket = self._create_socket(constants.LISTENING_TIMEOUT)
 
@@ -121,26 +130,27 @@ class SocketMessageSender(MessageSender):
             try:
                 message_socket, address = listening_socket.accept()
 
-                message = self._receive_message(message_socket)
-                self._process_message(message, message_socket)
-
+                thread = threading.Thread(target=self._handle_connection, args=(message_socket,))
+                thread.start()
             except socket.timeout:
                 pass
 
     def _create_socket(self, timeout: float) -> socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((socket.inet_ntoa(self.ip), self.port))
-        sock.listen(1)
+        sock.listen(10)
         sock.settimeout(timeout)
         return sock
 
     def _process_message(self, message: bytes, message_socket: socket) -> None:
         message_type = Container[MessageType]()
         message_context = Container[bytes]()
+
         MessageParser.parser(message) \
             .append_type(message_type) \
             .append_bytes(message_context) \
             .parse()
+
         if message_type.get() == MessageType.MESSAGE:
             self.handle_message(message_context.get())
         elif message_type.get() == MessageType.REQUEST:

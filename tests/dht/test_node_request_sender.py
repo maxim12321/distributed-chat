@@ -80,6 +80,26 @@ class TestNodeRequestSender(NodeRequestSender):
             return
         self.nodes[node.node_id].update_replication(deepcopy(new_info), deepcopy(new_data))
 
+    def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        return self.nodes[node.node_id].get_value(key)
+
+    def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        return self.nodes[node.node_id].get_all_values(key)
+
+    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        return self.nodes[node.node_id].set_value(key, value)
+
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+        if node.node_id not in self.nodes.keys():
+            return
+        return self.nodes[node.node_id].append_value(key, value)
+
     # Returns node, such that node.id >= target_id, used just for validating result in simulator
     def get_real_successor(self, target_id) -> NodeInfo:
         return self.successors[(target_id - 1) % self.module].node_info

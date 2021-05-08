@@ -1,6 +1,6 @@
 import json
 from enum import IntEnum
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, List, Type
 
 from src import constants, json_decoder
 from src.chat_message_cipher import ChatMessageCipher
@@ -31,16 +31,43 @@ class MessageParser:
         value.set(self._pop_bytes(length))
         return self
 
+    def append_optional_bytes(self, value: Container[bytes]) -> 'MessageParser':
+        optional_flag = self._pop_bytes(1)
+        if optional_flag == b'1':
+            self.append_bytes(value)
+        return self
+
+    def append_string(self, value: Container[str]) -> 'MessageParser':
+        data: Container[bytes] = Container()
+        self.append_bytes(data)
+        value.set(data.get().decode("utf-8"))
+        return self
+
     def append_object(self, value: Container[object]) -> 'MessageParser':
-        length = self._pop_int(constants.MESSAGE_LENGTH_BYTE_SIZE)
-        data = self._pop_bytes(length)
-        value.set(json.loads(data.decode("utf-8"), object_hook=json_decoder.decode))
+        data: Container[str] = Container()
+        self.append_string(data)
+
+        value.set(json.loads(data.get(), object_hook=json_decoder.decode))
         return self
 
     def append_serializable(self, value: Serializable):
-        data = Container(dict())
+        data: Container[dict] = Container()
         self.append_object(data)
         value.load_from_dict(data.get())
+        return self
+
+    def append_serializable_list(self, values: Container[List[Serializable]],
+                                 serializable_type: Type[Serializable]) -> 'MessageParser':
+        value_dicts: Container[List[dict]] = Container()
+        self.append_object(value_dicts)
+
+        parsed_values: List[Serializable] = []
+        for value_dict in value_dicts.get():
+            value = serializable_type()
+            value.load_from_dict(value_dict)
+            parsed_values.append(value)
+
+        values.set(parsed_values)
         return self
 
     def begin_authenticated(self, key: bytes) -> 'AuthenticatedParser':
