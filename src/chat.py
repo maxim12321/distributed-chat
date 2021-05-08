@@ -1,11 +1,14 @@
-from typing import Optional, Generator, Any
-from dataclasses import dataclass
-from serializable import Serializable
-from message_handler import MessageHandler
-from chat_message_type import ChatMessageType
 import os
 import base64
-import constants
+from typing import Optional, Generator, Any, List
+from dataclasses import dataclass
+from serializable import Serializable
+
+from src.message_parsers.message_parser import MessageParser
+from src.message_parsers.container import Container
+from src.chat_message_type import ChatMessageType
+from src.message_handler import MessageHandler
+import src.constants as constants
 
 
 @dataclass
@@ -44,9 +47,16 @@ class Chat(Serializable):
         link_bytes = base64.b64decode(link)
         self.private_key = link_bytes[:constants.PRIVATE_KEY_LENGTH]
 
+    def save_images(self, image_paths: List[str]) -> List[bytes]:
+        return self.message_handler.image_manager.save_images(image_paths)
+
     def handle_message(self, message: bytes) -> bytes:
-        message_type = ChatMessageType(constants.to_int(message[:constants.TYPE_BYTE_SIZE]))
-        message_content = message[constants.TYPE_BYTE_SIZE:]
+        message_type = Container[ChatMessageType]()
+        message_content = MessageParser.parser(message). \
+            append_type(message_type). \
+            parse()
+
+        message_type = message_type.get()
         if message_type == ChatMessageType.TEXT_MESSAGE:
             self.message_handler.handle_text_message(message_content)
             return bytearray()
@@ -59,6 +69,13 @@ class Chat(Serializable):
         if message_type == ChatMessageType.USER_LIST:
             self.message_handler.handle_user_list(message_content)
             return bytearray()
+
+        if message_type == ChatMessageType.IMAGE:
+            self.message_handler.handle_image(message_content)
+            return bytearray()
+
+        if message_type == ChatMessageType.IMAGE_ID:
+            return self.message_handler.handle_image_hashes(message_content)
 
     def get_user_list_message(self) -> bytes:
         user_id_list = self.message_handler.get_user_id_list()
