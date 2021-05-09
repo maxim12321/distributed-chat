@@ -18,22 +18,15 @@ class ChatManager:
     def add_chat(self, chat: Chat) -> None:
         self.chat_list[chat.get_chat_id()] = chat
 
-    def create_chat(self, ip: bytes, user_id: int, chat_name: str) -> None:
+    def create_chat(self, user_info: UserInfo, chat_name: str) -> None:
         chat = Chat()
         chat.create(chat_name)
-        print("1")
-        message = MessageBuilder.builder()
-        print("2")
-        message = message.append_type(ChatMessageType.INTRODUCE_USER)
-        print("3")
-        message = message.begin_encrypted()
-        print("4")
-        message = message.append_serializable(UserInfo(user_id, ip))
-        print("5")
-        message = message.encrypt(chat.private_key)
-        print("6")
-        message = message.build()
-        print("7")
+        message = MessageBuilder.builder() \
+            .append_type(ChatMessageType.INTRODUCE_USER) \
+            .begin_encrypted() \
+            .append_serializable(user_info) \
+            .encrypt(chat.private_key) \
+            .build()
         chat.handle_message(message)
         self.chat_list[chat.get_chat_id()] = chat
 
@@ -47,8 +40,8 @@ class ChatManager:
         if chat_id.get() in self.chat_list:
             return self.chat_list[chat_id.get()].handle_message(message)
 
-    def get_invite_link(self, chat_id: int, ip: bytes) -> str:
-        return self.chat_list[chat_id].generate_invite_link(ip)
+    def get_invite_link(self, chat_id: int, ip: bytes, user_port: int) -> str:
+        return self.chat_list[chat_id].generate_invite_link(ip, user_port)
 
     def get_chat_id_list(self) -> List[int]:
         return list(self.chat_list.keys())
@@ -62,20 +55,24 @@ class ChatManager:
     def get_message_list(self, chat_id: int) -> List[TextMessage]:
         return self.chat_list[chat_id].get_message_list()
 
-    def parse_invite_link(self, invite_link: str) -> [int, bytes, bytes]:
+    def parse_invite_link(self, invite_link: str) -> [int, bytes, bytes, int]:
         invite_link = base64.b64decode(invite_link)
 
         chat_id: Container[int] = Container()
         private_key: Container[bytes] = Container()
         ip: Container[bytes] = Container()
+        port: Container[bytes] = Container()
 
         MessageParser.parser(invite_link) \
             .append_id(chat_id) \
             .append_bytes(private_key) \
             .append_bytes(ip) \
+            .append_bytes(port) \
             .parse()
 
-        return chat_id.get(), private_key.get(), ip.get()
+        target_port = int(port.get().decode("utf-8"))
+
+        return chat_id.get(), private_key.get(), ip.get(), target_port
 
     def parse_chat_data(self, chat_data: bytes, private_key: bytes) -> Chat:
         chat = Chat()

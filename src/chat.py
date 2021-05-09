@@ -42,11 +42,14 @@ class Chat(Serializable):
         self.chat_name = data_dict["chat_name"]
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
-    def generate_invite_link(self, ip_address: bytes) -> str:
+    def generate_invite_link(self, ip_address: bytes, user_port: int) -> str:
+        user_port = str(user_port)
+        user_port = user_port.encode("utf-8")
         link = MessageBuilder.builder() \
             .append_id(self.chat_id) \
             .append_bytes(self.private_key) \
             .append_bytes(ip_address) \
+            .append_bytes(user_port) \
             .build()
         return constants.bytes_to_string(link)
 

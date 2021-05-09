@@ -87,7 +87,7 @@ class EncryptedBuilder(MessageBuilder, Generic[T]):
             self.parent = self.builder()
 
         cipher = ChatMessageCipher(key)
-        print("Hmmm")
+
         encrypted_data = cipher.encrypt_data(bytes(self.data))
 
         self.parent.append_bytes(encrypted_data)

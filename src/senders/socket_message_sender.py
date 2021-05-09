@@ -40,10 +40,17 @@ class SocketMessageSender(MessageSender):
 
     def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
         sending_socket = self._send_request_message(target_ip, target_port, request)
-        if sending_socket is None:
+        answer = self._receive_message(sending_socket)
+
+        if answer is None:
             return None
 
-        return self._receive_message(sending_socket)
+        response: Container[bytes] = Container()
+        MessageParser.parser(answer) \
+            .append_bytes(response) \
+            .parse()
+
+        return response.get()
 
     def add_long_polling_request(self, target_ip: bytes, target_port: int, request: bytes) -> None:
         current_socket = self._send_request_message(target_ip, target_port, request)
