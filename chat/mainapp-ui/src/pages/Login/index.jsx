@@ -1,6 +1,5 @@
 import React from "react";
-import Icon from '@ant-design/icons';
-import { Form, Input, Checkbox } from "antd";
+import { Form, Input } from "antd";
 import { UserOutlined } from '@ant-design/icons';
 
 import "./Login.scss";

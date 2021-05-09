@@ -1,0 +1,35 @@
+.chat-input {
+  display: flex;
+  margin: 20px;
+  position: relative;
+
+  &-send {
+    width: 760px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    width: 70px;
+    justify-content: space-between;
+    margin-left: 10px;
+
+    &-add {
+      width: 30px;
+      height: 30px;
+      opacity: 0.7;
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    &-send {
+      width: 30px;
+      height: 30px;
+      opacity: 0.7;
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+}

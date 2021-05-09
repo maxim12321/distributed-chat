@@ -4,7 +4,7 @@
   &__content {
     display: flex;
     max-width: 440px;
-    margin-bottom: 15px;
+    margin-bottom: 4px;
   }
 
   &__avatar {
@@ -13,19 +13,19 @@
 
     img {
       border-radius: 50px;
-      width: 33px;
-      height: 33px;
+      width: 60px;
+      height: 60px;
       margin-right: 13px;
-      margin-bottom: 23px;
+      margin-bottom: 8px;
     }
   }
 
   &__bubble {
-    background: #3674ff;
+    background: #FB9A48;
     box-shadow: 0px 5px 5px rgba(54, 116, 255, 0.196733);
     border-radius: 12px 12px 12px 0px;
     padding: 15px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   &__date {
@@ -36,6 +36,7 @@
   &__text {
     color: #fff;
     line-height: 15px;
+    font-size: 16px;
   }
 
   &__attachments {
@@ -47,9 +48,14 @@
       cursor: pointer;
 
       img {
-        height: 45px;
-        width: 45px;
+        height: 50px;
+        width: 50px;
         border-radius: 8px;
+        &:active {
+          height: 500px;
+          width: 500px;
+          border-radius: 1px;
+        }
       }
     }
   }
@@ -91,8 +97,13 @@
 
       &-item {
         img {
-          width: 150px;
-          height: 150px;
+          width: 165px;
+          height: 165px;
+          &:active {
+            height: 500px;
+            width: 500px;
+            border-radius: 1px;
+          }
         }
       }
     }

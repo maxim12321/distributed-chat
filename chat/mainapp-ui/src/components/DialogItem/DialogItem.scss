@@ -5,6 +5,9 @@
   padding: 4px;
   margin-bottom: 7px;
   cursor: pointer;
+  &:hover {
+    background-color: #fff;
+  }
 }
 
 .dialogs {

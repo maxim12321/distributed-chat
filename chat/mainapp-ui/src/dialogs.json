@@ -1,0 +1,102 @@
+[
+  {
+    "user": {
+      "fullname": "Franklin",
+      "avatar": null
+    },
+    "message": {
+      "text": "Nostrud consequat est officia duis est dolore id elit laboris officia cupidatat id aliqua laborum. Velit aliqua sunt elit ea velit elit. Ad non fugiat consectetur minim enim.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Lindsey",
+      "avatar": null
+    },
+    "message": {
+      "text": "Dolor veniam velit ea dolore ea fugiat consectetur adipisicing deserunt commodo do consequat est consequat. Voluptate aliqua irure id pariatur exercitation adipisicing aute. Irure irure ipsum ex amet irure non eu occaecat.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "June",
+      "avatar": null
+    },
+    "message": {
+      "text": "Aliqua veniam est consectetur commodo nulla occaecat excepteur minim ad esse minim pariatur anim deserunt. Sint cupidatat aliqua magna sint ut minim ea. Aliquip laborum eiusmod sint consequat.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Autumn",
+      "avatar": null
+    },
+    "message": {
+      "text": "Eiusmod excepteur anim adipisicing aliqua anim in sint consectetur dolor consectetur. Voluptate sint in ad proident pariatur. Reprehenderit fugiat sit qui ex officia do cupidatat.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Adrian",
+      "avatar": null
+    },
+    "message": {
+      "text": "Est irure tempor culpa esse aliquip officia ullamco ut quis est. In aliquip nulla id veniam magna incididunt quis. Aute aliquip laborum exercitation labore officia culpa deserunt.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Yvonne",
+      "avatar": null
+    },
+    "message": {
+      "text": "Ea amet ea ullamco excepteur excepteur id occaecat ullamco consequat. Velit ad duis exercitation cillum. Laborum mollit officia id exercitation sint proident aliquip do commodo aute tempor cillum sunt deserunt.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Gill",
+      "avatar": null
+    },
+    "message": {
+      "text": "Amet esse ad ea cupidatat do non Lorem velit ex eu commodo dolore. Quis commodo ea esse esse est. Ea velit tempor magna do id tempor do sunt consectetur sit ipsum aliquip.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Irma",
+      "avatar": null
+    },
+    "message": {
+      "text": "Irure officia cupidatat proident consequat est nulla ullamco minim duis commodo incididunt. Quis anim nulla in est tempor labore. Excepteur aliquip ea commodo duis culpa incididunt quis reprehenderit adipisicing ipsum commodo dolore esse mollit.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Tabitha",
+      "avatar": null
+    },
+    "message": {
+      "text": "Proident irure fugiat dolore qui do adipisicing occaecat nostrud excepteur velit dolore. Eu adipisicing fugiat incididunt aliqua. Id ea ex nisi et magna culpa adipisicing.",
+      "created": "20:30"
+    }
+  },
+  {
+    "user": {
+      "fullname": "Pitts",
+      "avatar": null
+    },
+    "message": {
+      "text": "Eu minim incididunt cillum et qui commodo deserunt fugiat est. Enim cupidatat eiusmod commodo nulla ut sint qui duis enim exercitation est. Eiusmod voluptate est adipisicing consequat consequat sint esse.",
+      "created": "20:30"
+    }
+  }
+]
