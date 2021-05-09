@@ -72,11 +72,8 @@ class ChordNodeRequestSender(NodeRequestSender):
         data = MessageParser.parser(request) \
             .append_type(request_type) \
             .parse()
-        print(f"Node {self.node_id} got {ChordRequestType(request_type.get()).name} request")
 
-        response = self.answers[request_type.get()](data)
-        print(f"Node {self.node_id} returns response for {ChordRequestType(request_type.get()).name} request")
-        return response
+        return self.answers[request_type.get()](data)
 
     def ping(self, node: NodeInfo) -> bool:
         if node.node_id == self.node_id:
