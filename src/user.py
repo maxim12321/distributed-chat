@@ -17,13 +17,14 @@ class User:
 
     def __init__(self, username: str):
         self.ip = os.urandom(3)
+        self.port = constants.random_int(5)
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
-        self.byte_message_socket = LocalMessageSender(self.ip, self.message_redirection.handle,
-                                                      self.message_redirection.handle)
+        self.byte_message_socket = LocalMessageSender(self.ip, self.port, self.message_redirection.handle,
+                                                      self.message_redirection.handle, self.message_redirection.handle)
 
         self._configure_message_redirection()
 
@@ -87,3 +88,6 @@ class User:
 
     def get_id(self) -> int:
         return self.user_id
+
+    def __del__(self):
+        self.byte_message_socket.__del__()

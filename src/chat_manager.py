@@ -21,12 +21,19 @@ class ChatManager:
     def create_chat(self, ip: bytes, user_id: int, chat_name: str) -> None:
         chat = Chat()
         chat.create(chat_name)
-        message = MessageBuilder.builder() \
-            .append_type(ChatMessageType.INTRODUCE_USER) \
-            .begin_encrypted() \
-            .append_serializable(UserInfo(user_id, ip)) \
-            .encrypt(chat.private_key) \
-            .build()
+        print("1")
+        message = MessageBuilder.builder()
+        print("2")
+        message = message.append_type(ChatMessageType.INTRODUCE_USER)
+        print("3")
+        message = message.begin_encrypted()
+        print("4")
+        message = message.append_serializable(UserInfo(user_id, ip))
+        print("5")
+        message = message.encrypt(chat.private_key)
+        print("6")
+        message = message.build()
+        print("7")
         chat.handle_message(message)
         self.chat_list[chat.get_chat_id()] = chat
 

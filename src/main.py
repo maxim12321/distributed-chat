@@ -26,46 +26,51 @@ def print_user_info(user):
 
 if __name__ == "__main__":
     user1 = User("Squirell")
+
     user2 = User("Rabbit")
 
     user1.create_chat("Test Chat")
-    print_user_info(user1)
 
-    temp = user1.get_chat_id_list()
-    id = temp[0]
-    link = user1.get_invite_link(id)
+    del user1
+    del user2
 
-    print('!!!!!!')
-    print(link)
-    print('!!!!!!')
-
-    user2.join_chat_by_link(link)
-    user1.send_text_message(temp[0], "Hola hola")
-
-    print_user_info(user2)
-    print_user_info(user1)
-
-    print("ADDING NEW USER")
-
-    user3 = User("Fluffy")
-    print_user_info(user3)
-    user3.create_chat("Fluffy_CHAT")
-    print_user_info(user3)
-    temp = user3.get_chat_id_list()
-    id = temp[0]
-    link = user3.get_invite_link(id)
-    user3.send_text_message(id, 'Test мессаге')
-
-    print('!!!!!!')
-    print(link)
-    print('!!!!!!')
-
-    user1.join_chat_by_link(link)
-    user2.join_chat_by_link(link)
-
-    print_user_info(user1)
-    print_user_info(user2)
-    print_user_info(user3)
+    # print_user_info(user1)
+    #
+    # temp = user1.get_chat_id_list()
+    # id = temp[0]
+    # link = user1.get_invite_link(id)
+    #
+    # print('!!!!!!')
+    # print(link)
+    # print('!!!!!!')
+    #
+    # user2.join_chat_by_link(link)
+    # user1.send_text_message(temp[0], "Hola hola")
+    #
+    # print_user_info(user2)
+    # print_user_info(user1)
+    #
+    # print("ADDING NEW USER")
+    #
+    # user3 = User("Fluffy")
+    # print_user_info(user3)
+    # user3.create_chat("Fluffy_CHAT")
+    # print_user_info(user3)
+    # temp = user3.get_chat_id_list()
+    # id = temp[0]
+    # link = user3.get_invite_link(id)
+    # user3.send_text_message(id, 'Test мессаге')
+    #
+    # print('!!!!!!')
+    # print(link)
+    # print('!!!!!!')
+    #
+    # user1.join_chat_by_link(link)
+    # user2.join_chat_by_link(link)
+    #
+    # print_user_info(user1)
+    # print_user_info(user2)
+    # print_user_info(user3)
 
     # user = User()
     # while True:

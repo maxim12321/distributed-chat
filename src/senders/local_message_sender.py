@@ -15,9 +15,9 @@ class LocalMessageSender(MessageSender):
     message_senders: Dict[bytes, 'LocalMessageSender'] = {}
 
     def __init__(self, ip: bytes, port: int,
-                 on_message_received: Callable[[bytes], None],
-                 on_request_received: Callable[[bytes], bytes],
-                 on_long_polling_response_received: Callable[[bytes], None]) -> None:
+                 on_message_received: Callable[[bytes], Optional[bytes]],
+                 on_request_received: Callable[[bytes], Optional[bytes]],
+                 on_long_polling_response_received: Callable[[bytes], Optional[bytes]]) -> None:
         super().__init__(ip, port, on_message_received, on_request_received, on_long_polling_response_received)
 
         self.requests: List[RequestInfo] = []
@@ -43,6 +43,7 @@ class LocalMessageSender(MessageSender):
 
     def _send_long_polling_requests(self) -> None:
         while self.is_listening:
+            # print(self.is_listening)
             for index, request_info in enumerate(self.requests):
                 if request_info.sender_thread is None:
                     self.requests[index].sender_thread = threading.Thread(target=self.send_request,
