@@ -38,12 +38,12 @@ class NodeRequestSender(ABC):
         pass
 
     @abstractmethod
-    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> None:
+    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> Optional[bytes]:
         # node.propose_finger_update(node_to_update, finger_number)
         pass
 
     @abstractmethod
-    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> None:
+    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> Optional[bytes]:
         # node.update_previous_node(node_to_propose)
         pass
 
@@ -58,12 +58,13 @@ class NodeRequestSender(ABC):
         pass
 
     @abstractmethod
-    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> None:
+    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> Optional[bytes]:
         # return node.update_replication_info(new_info)
         pass
 
     @abstractmethod
-    def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+    def update_replication(self, node: NodeInfo,
+                           new_info: ReplicationInfo, new_data: ReplicationData) -> Optional[bytes]:
         # return node.update_replication(new_info, new_data)
         pass
 
@@ -76,9 +77,9 @@ class NodeRequestSender(ABC):
         pass
 
     @abstractmethod
-    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         pass
 
     @abstractmethod
-    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         pass

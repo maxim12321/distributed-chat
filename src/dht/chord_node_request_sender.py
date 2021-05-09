@@ -72,8 +72,11 @@ class ChordNodeRequestSender(NodeRequestSender):
         data = MessageParser.parser(request) \
             .append_type(request_type) \
             .parse()
+        print(f"Node {self.node_id} got {ChordRequestType(request_type.get()).name} request")
 
-        return self.answers[request_type.get()](data)
+        response = self.answers[request_type.get()](data)
+        print(f"Node {self.node_id} returns response for {ChordRequestType(request_type.get()).name} request")
+        return response
 
     def ping(self, node: NodeInfo) -> bool:
         if node.node_id == self.node_id:
@@ -117,7 +120,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
         return node_info
 
-    def request_successor_answer(self, data: bytes) -> Optional[bytes]:
+    def request_successor_answer(self, data: bytes) -> bytes:
         return self._answer_node_info_by_id(data, self.node.find_successor)
 
     def request_next_node(self, node: NodeInfo) -> Optional[NodeInfo]:
@@ -130,7 +133,7 @@ class ChordNodeRequestSender(NodeRequestSender):
 
         return self._make_node_info_request(node, request)
 
-    def request_next_node_answer(self, _: bytes) -> Optional[bytes]:
+    def request_next_node_answer(self, _: bytes) -> bytes:
         answer: NodeInfo = self.node.get_next_node()
 
         return MessageBuilder.builder() \
@@ -147,7 +150,7 @@ class ChordNodeRequestSender(NodeRequestSender):
 
         return self._make_node_info_request(node, request)
 
-    def request_previous_node_answer(self, _: bytes) -> Optional[bytes]:
+    def request_previous_node_answer(self, _: bytes) -> bytes:
         answer: NodeInfo = self.node.get_previous_node()
 
         return MessageBuilder.builder() \
@@ -165,7 +168,7 @@ class ChordNodeRequestSender(NodeRequestSender):
 
         return self._make_node_info_request(node, request)
 
-    def request_preceding_finger_answer(self, data: bytes) -> Optional[bytes]:
+    def request_preceding_finger_answer(self, data: bytes) -> bytes:
         return self._answer_node_info_by_id(data, self.node.find_preceding_finger)
 
     def request_successor_list(self, node: NodeInfo) -> Optional[List[NodeInfo]]:
@@ -187,7 +190,7 @@ class ChordNodeRequestSender(NodeRequestSender):
 
         return successors.get()
 
-    def request_successor_list_answer(self, _: bytes) -> Optional[bytes]:
+    def request_successor_list_answer(self, _: bytes) -> bytes:
         answer: List[NodeInfo] = self.node.get_successor_list()
 
         return MessageBuilder.builder() \
@@ -212,7 +215,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
         return replication_info
 
-    def request_replication_info_answer(self, _: bytes) -> Optional[bytes]:
+    def request_replication_info_answer(self, _: bytes) -> bytes:
         answer: ReplicationInfo = self.node.get_replication_info()
 
         return MessageBuilder.builder() \
@@ -238,7 +241,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
         return replication_data
 
-    def request_data_by_keys_answer(self, data: bytes) -> Optional[bytes]:
+    def request_data_by_keys_answer(self, data: bytes) -> bytes:
         keys: Container[List[str]] = Container()
         MessageParser.parser(data) \
             .append_object(keys) \
@@ -252,10 +255,10 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_serializable(answer) \
             .build()
 
-    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> None:
+    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.propose_finger_update(node_to_update, finger_number)
-            return
+            return b''
 
         message = MessageBuilder.builder() \
             .append_type(ChordRequestType.PROPOSE_FINGER_UPDATE) \
@@ -263,9 +266,9 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_object(finger_number) \
             .build()
 
-        self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.message_sender.send_request(node.node_ip, node.node_port, message)
 
-    def propose_finger_update_receive(self, data: bytes) -> Optional[bytes]:
+    def propose_finger_update_receive(self, data: bytes) -> bytes:
         node_to_update: NodeInfo = NodeInfo()
         finger_number: Container[int] = Container()
 
@@ -277,19 +280,19 @@ class ChordNodeRequestSender(NodeRequestSender):
         self.node.propose_finger_update(node_to_update, finger_number.get())
         return b''
 
-    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> None:
+    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.update_previous_node(node_to_propose)
-            return
+            return b''
 
         message = MessageBuilder.builder() \
             .append_type(ChordRequestType.PROPOSE_PREDECESSOR) \
             .append_serializable(node_to_propose) \
             .build()
 
-        self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.message_sender.send_request(node.node_ip, node.node_port, message)
 
-    def propose_predecessor_receive(self, data: bytes) -> Optional[bytes]:
+    def propose_predecessor_receive(self, data: bytes) -> bytes:
         node_to_propose: NodeInfo = NodeInfo()
 
         MessageParser.parser(data) \
@@ -299,19 +302,19 @@ class ChordNodeRequestSender(NodeRequestSender):
         self.node.update_previous_node(node_to_propose)
         return b''
 
-    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> None:
+    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.update_replication_info(new_info)
-            return
+            return b''
 
         message = MessageBuilder.builder() \
             .append_type(ChordRequestType.UPDATE_REPLICATION_INFO) \
             .append_serializable(new_info) \
             .build()
 
-        self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.message_sender.send_request(node.node_ip, node.node_port, message)
 
-    def update_replication_info_receive(self, data: bytes) -> Optional[bytes]:
+    def update_replication_info_receive(self, data: bytes) -> bytes:
         new_info: ReplicationInfo = ReplicationInfo()
 
         MessageParser.parser(data) \
@@ -321,10 +324,11 @@ class ChordNodeRequestSender(NodeRequestSender):
         self.node.update_replication_info(new_info)
         return b''
 
-    def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+    def update_replication(self, node: NodeInfo,
+                           new_info: ReplicationInfo, new_data: ReplicationData) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.update_replication(new_info, new_data)
-            return
+            return b''
 
         message = MessageBuilder.builder() \
             .append_type(ChordRequestType.UPDATE_REPLICATION) \
@@ -332,9 +336,9 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_serializable(new_data) \
             .build()
 
-        self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.message_sender.send_request(node.node_ip, node.node_port, message)
 
-    def update_replication_receive(self, data: bytes) -> Optional[bytes]:
+    def update_replication_receive(self, data: bytes) -> bytes:
         new_info: ReplicationInfo = ReplicationInfo()
         new_data: ReplicationData = ReplicationData()
 
@@ -365,7 +369,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
         return value.get()
 
-    def get_value_answer(self, data: bytes) -> Optional[bytes]:
+    def get_value_answer(self, data: bytes) -> bytes:
         key_string: Container[str] = Container()
         MessageParser.parser(data) \
             .append_string(key_string) \
@@ -398,7 +402,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
         return values.get()
 
-    def get_all_values_answer(self, data: bytes) -> Optional[bytes]:
+    def get_all_values_answer(self, data: bytes) -> bytes:
         key_string: Container[str] = Container()
         MessageParser.parser(data) \
             .append_string(key_string) \
@@ -409,33 +413,33 @@ class ChordNodeRequestSender(NodeRequestSender):
         answer: Optional[List[bytes]] = self.node.get_all_values(info_key)
         if answer is None:
             answer = []
-        answer: Optional[List[dict]] = [constants.bytes_to_dict(value) for value in answer]
+        answer: List[dict] = [constants.bytes_to_dict(value) for value in answer]
 
         return MessageBuilder.builder() \
             .append_object(answer) \
             .build()
 
-    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.set_value(key, value)
-            return
+            return b''
 
-        self._make_info_key_value_request(node, key, value, ChordRequestType.SET_VALUE)
+        return self._make_info_key_value_request(node, key, value, ChordRequestType.SET_VALUE)
 
-    def set_value_receive(self, data: bytes) -> Optional[bytes]:
+    def set_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)
 
         self.node.set_value(info_key, value)
         return b''
 
-    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> None:
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.append_value(key, value)
-            return
+            return b''
 
-        self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
+        return self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
 
-    def append_value_receive(self, data: bytes) -> Optional[bytes]:
+    def append_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)
 
         self.node.append_value(info_key, value)
@@ -453,17 +457,17 @@ class ChordNodeRequestSender(NodeRequestSender):
         return node_info
 
     def _make_info_key_value_request(self, node: NodeInfo, key: InfoKey, value: bytes,
-                                     request_type: ChordRequestType) -> None:
+                                     request_type: ChordRequestType) -> Optional[bytes]:
         message = MessageBuilder.builder() \
             .append_type(request_type) \
             .append_string(str(key)) \
             .append_bytes(value) \
             .build()
 
-        self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.message_sender.send_request(node.node_ip, node.node_port, message)
 
     @staticmethod
-    def _receive_info_key_value(data: bytes) -> Tuple[InfoKey, Optional[bytes]]:
+    def _receive_info_key_value(data: bytes) -> Tuple[InfoKey, bytes]:
         key_string: Container[str] = Container()
         value: Container[bytes] = Container()
 
@@ -475,7 +479,7 @@ class ChordNodeRequestSender(NodeRequestSender):
         return InfoKey.from_string(key_string.get()), value.get()
 
     @staticmethod
-    def _answer_node_info_by_id(data: bytes, id_to_node_info: Callable[[int], NodeInfo]) -> Optional[bytes]:
+    def _answer_node_info_by_id(data: bytes, id_to_node_info: Callable[[int], NodeInfo]) -> bytes:
         target_id: Container[int] = Container()
 
         MessageParser.parser(data) \
