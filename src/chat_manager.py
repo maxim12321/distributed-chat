@@ -1,5 +1,5 @@
 import base64
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from src.chat import Chat
 from src.chat_message_type import ChatMessageType
@@ -55,7 +55,7 @@ class ChatManager:
     def get_message_list(self, chat_id: int) -> List[TextMessage]:
         return self.chat_list[chat_id].get_message_list()
 
-    def parse_invite_link(self, invite_link: str) -> [int, bytes, bytes, int]:
+    def parse_invite_link(self, invite_link: str) -> Tuple[int, bytes, bytes, int]:
         invite_link = base64.b64decode(invite_link)
 
         chat_id: Container[int] = Container()

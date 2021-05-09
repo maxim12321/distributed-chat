@@ -21,7 +21,7 @@ class User:
     def __init__(self, username: str):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
-        self.port = constants.random_int(2)
+        self.port = 8090 + constants.random_int(1)
         print(self.port)
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
