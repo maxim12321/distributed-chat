@@ -13,9 +13,9 @@ from src.senders.message_type import MessageType
 
 class SocketMessageSender(MessageSender):
     def __init__(self, ip: bytes, port: int,
-                 on_message_received: Callable[[bytes], None],
-                 on_request_received: Callable[[bytes], bytes],
-                 on_long_polling_response_received: Callable[[bytes], None]) -> None:
+                 on_message_received: Callable[[bytes], Optional[bytes]],
+                 on_request_received: Callable[[bytes], Optional[bytes]],
+                 on_long_polling_response_received: Callable[[bytes], Optional[bytes]]) -> None:
         super().__init__(ip, port, on_message_received, on_request_received, on_long_polling_response_received)
 
         self.is_listening = True
@@ -40,10 +40,17 @@ class SocketMessageSender(MessageSender):
 
     def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
         sending_socket = self._send_request_message(target_ip, target_port, request)
-        if sending_socket is None:
+        answer = self._receive_message(sending_socket)
+
+        if answer is None:
             return None
 
-        return self._receive_message(sending_socket)
+        response: Container[bytes] = Container()
+        MessageParser.parser(answer) \
+            .append_bytes(response) \
+            .parse()
+
+        return response.get()
 
     def add_long_polling_request(self, target_ip: bytes, target_port: int, request: bytes) -> None:
         current_socket = self._send_request_message(target_ip, target_port, request)

@@ -19,6 +19,9 @@ MESSAGE_TIMEOUT: float = 3
 
 INDENT: int = 4
 
+REPLICATION_FACTOR: int = 5
+SUCCESSOR_LIST_SIZE: int = 5
+
 
 def type_to_bytes(message_type: IntEnum) -> bytes:
     return int(message_type).to_bytes(TYPE_BYTE_SIZE, BYTE_ORDER)
