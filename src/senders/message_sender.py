@@ -5,9 +5,9 @@ from typing import Callable, Optional
 class MessageSender(ABC):
     @abstractmethod
     def __init__(self, ip: bytes, port: int,
-                 on_message_received: Callable[[bytes], None],
-                 on_request_received: Callable[[bytes], bytes],
-                 on_long_polling_response_received: Callable[[bytes], None]) -> None:
+                 on_message_received: Callable[[bytes], Optional[bytes]],
+                 on_request_received: Callable[[bytes], Optional[bytes]],
+                 on_long_polling_response_received: Callable[[bytes], Optional[bytes]]) -> None:
         self.ip = ip
         self.port = port
         self.on_message_received = on_message_received
@@ -34,3 +34,6 @@ class MessageSender(ABC):
 
     def handle_long_polling_request(self, message: bytes):
         self.on_long_polling_response_received(message)
+
+    def __del__(self):
+        pass
