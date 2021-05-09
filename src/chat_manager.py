@@ -6,7 +6,7 @@ from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
-from src.text_message import ChatMessage
+from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 

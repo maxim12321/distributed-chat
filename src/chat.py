@@ -9,7 +9,7 @@ from src.message_builders.message_builder import MessageBuilder
 from src.message_handler import MessageHandler
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
-from src.text_message import ChatMessage
+from src.chat_message import ChatMessage
 from src.serializable import Serializable
 from src.user_info import UserInfo
 
@@ -78,12 +78,12 @@ class Chat(Serializable):
                 .build()
             return message
 
-        if message_type == ChatMessageType.IMAGE:
-            self.message_handler.handle_image(message)
-            return bytearray()
+        if message_type.get() == ChatMessageType.IMAGE_MESSAGE:
+            self.message_handler.handle_image_message(message, self.private_key)
+            return None
 
-        if message_type == ChatMessageType.IMAGE_ID:
-            return self.message_handler.handle_image_hashes(message)
+        if message_type.get() == ChatMessageType.IMAGE_REQUEST:
+            return self.message_handler.handle_image_request(message, self.private_key)
 
     def get_chat_id(self) -> int:
         return self.chat_id

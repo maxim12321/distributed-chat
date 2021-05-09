@@ -1,5 +1,4 @@
 from typing import List
-
 import socket
 
 from src import constants
@@ -10,7 +9,7 @@ from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_redirection import MessageRedirection
 from src.senders.socket_message_sender import SocketMessageSender
-from src.text_message import ChatMessage
+from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 

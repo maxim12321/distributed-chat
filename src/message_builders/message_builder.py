@@ -27,7 +27,7 @@ class MessageBuilder:
         self.data.extend(value)
         return self
 
-    def append_bytes_list(self, value: List[bytes]):
+    def append_bytes_list(self, value: List[bytes]) -> 'MessageBuilder':
         value_dicts = [constants.bytes_to_dict(element) for element in value]
         self.append_object(value_dicts)
         return self

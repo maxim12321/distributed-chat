@@ -6,7 +6,7 @@ from typing import List
 
 from src.message_parsers.message_parser import MessageParser
 from src.serializable import Serializable
-from src.text_message import ChatMessage
+from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 
@@ -49,16 +49,15 @@ class MessageHandler(Serializable):
             .parse()
         self.users.append(user_info)
 
-    def handle_image(self, message: bytes, private_key: bytes) -> None:
+    def handle_image_message(self, message: bytes, private_key: bytes) -> None:
         sender_id = Container[int]()
         image_hashes = MessageParser.parser(message) \
             .begin_encrypted(private_key) \
             .append_id(sender_id) \
-            .encrypt() \
             .parse()
-        self.messages.append(ChatMessage(ChatMessageType.IMAGE, sender_id.get(), image_hashes))
+        self.messages.append(ChatMessage(ChatMessageType.IMAGE_MESSAGE, sender_id.get(), image_hashes))
 
-    def handle_image_hashes(self, message: bytes, private_key: bytes) -> bytes:
+    def handle_image_request(self, message: bytes, private_key: bytes) -> bytes:
         sender_id = Container[int]()
         context = Container[List[str]]()
         MessageParser.parser(message) \
