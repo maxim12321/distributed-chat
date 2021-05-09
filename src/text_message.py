@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Generator, Any
 
+from src.serializable import Serializable
 from src.chat_message_type import ChatMessageType
 import constants
 

@@ -109,7 +109,10 @@ class SocketMessageSender(MessageSender):
                 if message_socket in self.long_polling_sockets.keys():
                     self.long_polling_sockets.pop(message_socket)
                 return None
-            return message_socket.recv(message_length)
+            try:
+                return message_socket.recv(message_length)
+            except ConnectionRefusedError:
+                return None
 
         except socket.timeout:
             return None
@@ -122,6 +125,9 @@ class SocketMessageSender(MessageSender):
                 message_socket, address = listening_socket.accept()
 
                 message = self._receive_message(message_socket)
+                if message is None:
+                    continue
+
                 self._process_message(message, message_socket)
 
             except socket.timeout:

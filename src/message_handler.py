@@ -34,17 +34,17 @@ class MessageHandler(Serializable):
     def handle_text_message(self, message: bytes) -> None:
         sender_id = Container[int]()
         text_message = Container[bytes]()
-        MessageParser.parser(message). \
-            append_id(sender_id). \
-            append_bytes(text_message). \
-            parse()
+        MessageParser.parser(message) \
+            .append_id(sender_id) \
+            .append_bytes(text_message) \
+            .parse()
         self.messages.append(ChatMessage(ChatMessageType.TEXT_MESSAGE, sender_id.get(), text_message.get()))
 
     def handle_introduce_user(self, message_id: bytes) -> None:
         user_id = Container[int]()
-        MessageParser.parser(message_id). \
-            append_id(user_id). \
-            parse()
+        MessageParser.parser(message_id) \
+            .append_id(user_id) \
+            .parse()
         self.users.append(UserInfo(user_id))
 
     def handle_user_list(self, message: bytes) -> None:
@@ -55,24 +55,23 @@ class MessageHandler(Serializable):
 
     def handle_image(self, message: bytes) -> None:
         sender_id = Container[int]()
-        image_hashes = MessageParser.parser(message). \
-            append_id(sender_id). \
-            parse()
+        image_hashes = MessageParser.parser(message) \
+            .append_id(sender_id) \
+            .parse()
         self.messages.append(ChatMessage(ChatMessageType.IMAGE, sender_id.get(), image_hashes))
 
     def handle_image_hashes(self, message: bytes) -> bytes:
         sender_id = Container[int]()
         context = Container[List[str]]()
-        MessageParser.parser(message). \
-            append_id(sender_id). \
-            append_object(context). \
-            parse()
+        MessageParser.parser(message) \
+            .append_id(sender_id) \
+            .append_object(context) \
+            .parse()
 
         images = self.image_manager.get_images(context.get())
-        answer = MessageBuilder.builder(). \
-            append_bytes_list(images). \
-            build()
-        return answer
+        return MessageBuilder.builder() \
+            .append_bytes_list(images) \
+            .build()
 
     def get_user_id_list(self) -> List[UserInfo]:
         return self.users
