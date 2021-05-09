@@ -6,7 +6,7 @@ from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
-from src.text_message import TextMessage
+from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 
@@ -52,7 +52,7 @@ class ChatManager:
     def get_user_id_list(self, chat_id: int) -> List[UserInfo]:
         return self.chat_list[chat_id].message_handler.get_user_id_list()
 
-    def get_message_list(self, chat_id: int) -> List[TextMessage]:
+    def get_message_list(self, chat_id: int) -> List[ChatMessage]:
         return self.chat_list[chat_id].get_message_list()
 
     def parse_invite_link(self, invite_link: str) -> Tuple[int, bytes, bytes, int]:
@@ -85,7 +85,7 @@ class ChatManager:
 
         return chat
 
-    def build_send_text_message(self, chat_id: int, text_message: TextMessage) -> bytes:
+    def build_send_text_message(self, chat_id: int, text_message: ChatMessage) -> bytes:
         return self.chat_list[chat_id].build_send_text_message(text_message)
 
     def build_introduce_message(self, chat_id: int, user_info: UserInfo) -> bytes:

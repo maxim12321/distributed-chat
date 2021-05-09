@@ -9,7 +9,7 @@ from src.message_builders.message_builder import MessageBuilder
 from src.message_handler import MessageHandler
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
-from src.text_message import TextMessage
+from src.chat_message import ChatMessage
 from src.serializable import Serializable
 from src.user_info import UserInfo
 
@@ -53,28 +53,36 @@ class Chat(Serializable):
             .build()
         return constants.bytes_to_string(link)
 
+    def save_images(self, image_paths: List[str]) -> List[bytes]:
+        return self.message_handler.image_manager.save_images(image_paths)
+
     def handle_message(self, message: bytes) -> Optional[bytes]:
         message_type = Container[ChatMessageType]()
-
         message = MessageParser.parser(message) \
             .append_type(message_type) \
+            .begin_encrypted(self.private_key) \
             .parse()
 
         if message_type.get() == ChatMessageType.TEXT_MESSAGE:
-            self.message_handler.handle_text_message(message, self.private_key)
+            self.message_handler.handle_text_message(message)
             return None
 
         if message_type.get() == ChatMessageType.INTRODUCE_USER:
-            self.message_handler.handle_introduce_user(message, self.private_key)
+            self.message_handler.handle_introduce_user(message)
             return None
 
         if message_type.get() == ChatMessageType.GET_CHAT:
             message = MessageBuilder.builder() \
-                .begin_encrypted() \
                 .append_serializable(self) \
-                .encrypt(self.private_key) \
                 .build()
             return message
+
+        if message_type.get() == ChatMessageType.IMAGE_MESSAGE:
+            self.message_handler.handle_image_message(message)
+            return None
+
+        if message_type.get() == ChatMessageType.IMAGE_REQUEST:
+            return self.message_handler.handle_image_request(message)
 
     def get_chat_id(self) -> int:
         return self.chat_id
@@ -85,10 +93,10 @@ class Chat(Serializable):
     def get_user_id_list(self) -> List[UserInfo]:
         return self.message_handler.get_user_id_list()
 
-    def get_message_list(self) -> List[TextMessage]:
+    def get_message_list(self) -> List[ChatMessage]:
         return self.message_handler.get_message_list()
 
-    def build_send_text_message(self, text_message: TextMessage) -> bytes:
+    def build_send_text_message(self, text_message: ChatMessage) -> bytes:
         return MessageBuilder.builder() \
             .append_type(ByteMessageType.CHAT_MESSAGE) \
             .append_id(self.chat_id) \

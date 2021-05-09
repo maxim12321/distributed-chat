@@ -1,6 +1,6 @@
 import json
 from enum import IntEnum
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, List
 
 from src import constants
 from src.senders.message_type import MessageType
@@ -25,6 +25,11 @@ class MessageBuilder:
     def append_bytes(self, value: bytes) -> 'MessageBuilder':
         self.data.extend(constants.message_length_to_bytes(len(value)))
         self.data.extend(value)
+        return self
+
+    def append_bytes_list(self, value: List[bytes]) -> 'MessageBuilder':
+        value_dicts = [constants.bytes_to_dict(element) for element in value]
+        self.append_object(value_dicts)
         return self
 
     def append_object(self, value: object) -> 'MessageBuilder':

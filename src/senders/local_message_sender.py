@@ -43,7 +43,6 @@ class LocalMessageSender(MessageSender):
 
     def _send_long_polling_requests(self) -> None:
         while self.is_listening:
-            # print(self.is_listening)
             for index, request_info in enumerate(self.requests):
                 if request_info.sender_thread is None:
                     self.requests[index].sender_thread = threading.Thread(target=self.send_request,

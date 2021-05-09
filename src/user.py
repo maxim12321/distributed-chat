@@ -1,6 +1,4 @@
-import os
 from typing import List
-
 import socket
 
 from src import constants
@@ -10,9 +8,8 @@ from src.chat_manager import ChatManager
 from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_redirection import MessageRedirection
-from src.senders.local_message_sender import LocalMessageSender
 from src.senders.socket_message_sender import SocketMessageSender
-from src.text_message import TextMessage
+from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 
@@ -22,14 +19,14 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
-        print(self.port)
+
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
         self.byte_message_socket = SocketMessageSender(self.ip, self.port, self.message_redirection.handle,
-                                                      self.message_redirection.handle, self.message_redirection.handle)
+                                                       self.message_redirection.handle, self.message_redirection.handle)
 
         self._configure_message_redirection()
 
@@ -70,7 +67,8 @@ class User:
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
-        message = self.chat_manager.build_send_text_message(chat_id, TextMessage(self.user_id, data))
+        chat_message = ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id, data)
+        message = self.chat_manager.build_send_text_message(chat_id, chat_message)
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:
@@ -82,7 +80,7 @@ class User:
     def get_user_id_list(self, chat_id: int) -> List[UserInfo]:
         return self.chat_manager.get_user_id_list(chat_id)
 
-    def get_message_list(self, chat_id: int) -> List[TextMessage]:
+    def get_message_list(self, chat_id: int) -> List[ChatMessage]:
         return self.chat_manager.get_message_list(chat_id)
 
     def get_username(self) -> str:
