@@ -1,11 +1,13 @@
-from serializable import Serializable
-from text_message import TextMessage
-from user_info import UserInfo
 from typing import List
-import constants
+
+from src.message_parsers.message_parser import MessageParser
+from src.serializable import Serializable
+from src.text_message import TextMessage
+from src.user_info import UserInfo
 
 
 class MessageHandler(Serializable):
+
     def __init__(self):
         self.users: List[UserInfo] = []
         self.messages: List[TextMessage] = []
@@ -20,26 +22,30 @@ class MessageHandler(Serializable):
         self.messages.clear()
         self.users.clear()
         for message in data["message_list"]:
-            self.messages.append(TextMessage(message["sender_id"], message["context"]))
+            self.messages.append(TextMessage.from_dict(message))
         for user_info in data["user_info_list"]:
-            self.users.append(UserInfo(user_info["user_id"]))
+            self.users.append(UserInfo.from_dict(user_info))
 
-    def handle_text_message(self, message: bytes) -> None:
-        sender_id = constants.to_int(message[:constants.ID_LENGTH])
-        text_message = message[constants.ID_LENGTH:]
-        self.messages.append(TextMessage(sender_id, text_message))
+    def handle_text_message(self, message: bytes, private_key: bytes) -> None:
+        text_message = TextMessage()
+        MessageParser.parser(message) \
+            .begin_encrypted(private_key) \
+            .append_serializable(text_message) \
+            .encrypt() \
+            .parse()
+        self.messages.append(text_message)
 
-    def handle_introduce_user(self, message_id: bytes) -> None:
-        self.users.append(UserInfo(constants.to_int(message_id)))
-
-    def handle_user_list(self, message: bytes) -> None:
-        self.users.clear()
-        for current_byte in range(0, len(message), constants.ID_LENGTH):
-            user_id_bytes = message[current_byte:current_byte + constants.ID_LENGTH]
-            self.users.append(UserInfo(constants.to_int(user_id_bytes)))
+    def handle_introduce_user(self, message_id: bytes, private_key: bytes) -> None:
+        user_info = UserInfo()
+        MessageParser.parser(message_id) \
+            .begin_encrypted(private_key) \
+            .append_serializable(user_info) \
+            .encrypt() \
+            .parse()
+        self.users.append(user_info)
 
     def get_user_id_list(self) -> List[UserInfo]:
         return self.users
 
-    def get_messages(self) -> List[TextMessage]:
+    def get_message_list(self) -> List[TextMessage]:
         return self.messages
