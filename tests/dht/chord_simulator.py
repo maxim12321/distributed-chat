@@ -10,8 +10,8 @@ from tests.dht.test_node_request_sender import TestNodeRequestSender
 
 class ChordSimulator:
     def __init__(self, id_power) -> None:
-        self.m = id_power
-        self.module = 2 ** self.m
+        self.id_bit_length = id_power
+        self.module = 2 ** self.id_bit_length
 
         self.nodes: Dict[int, ChordNode] = dict()
         self.request_sender: TestNodeRequestSender = TestNodeRequestSender(self.module)
@@ -26,7 +26,7 @@ class ChordSimulator:
         self.add_node(node_id)
 
     def add_node(self, node_id: int) -> None:
-        chord_node = ChordNode(self.m, node_id, b'0', 0, self.request_sender)
+        chord_node = ChordNode(self.id_bit_length, node_id, b'0', 0, self.request_sender)
 
         self.nodes[node_id] = chord_node
         self.request_sender.add_node(node_id, chord_node)
@@ -107,7 +107,8 @@ class ChordSimulator:
             # Make some stabilization and try again
             node = self._get_successor(key.data_id)
             for i in range(constants.REPLICATION_FACTOR):
-                node.stabilize()
+                for _ in range(self.id_bit_length):
+                    node.fix_finger()
                 node = self.nodes[node.get_next_node().node_id]
 
         if self.count_replicas(key) != constants.REPLICATION_FACTOR \

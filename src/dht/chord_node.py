@@ -152,6 +152,8 @@ class ChordNode:
         target_id = (self.finger_table[self.last_updated_finger].start - 1) % self.module
         self.finger_table[self.last_updated_finger].node = self.find_successor(target_id)
 
+        self._try_push_finger_forward(self.last_updated_finger)
+
         self.last_updated_finger += 1
         if self.last_updated_finger == self.id_bit_length:
             self.last_updated_finger = 1
@@ -247,7 +249,6 @@ class ChordNode:
             else:
                 self.finger_table[finger_number].node = node
 
-            # TODO: Try to send only when it can possibly be
             while self.request_sender.propose_finger_update(self.predecessor, node, finger_number) is None:
                 self._check_predecessor()
 
@@ -255,19 +256,16 @@ class ChordNode:
     def _init_finger_table(self, successor: NodeInfo) -> bool:
         self._set_successor(successor)
 
-        last_successor_id = successor.node_id
         for i in range(1, self.id_bit_length):
-            if self.is_inside_right(self.node_info.node_id, last_successor_id, self.finger_table[i].start):
-                # If (i-1)-th finger is also i-th finger, no need to make request
-                self.finger_table[i].node = self.finger_table[i - 1].node
-            else:
+            if self.finger_table[i].node.node_id == self.node_info.node_id:
                 # Get real successors from chord ring
                 target_id = (self.finger_table[i].start - 1) % self.module
                 self.finger_table[i].node = self.request_sender.request_successor(successor, target_id)
                 if self.finger_table[i].node is None:
                     return False
 
-            last_successor_id = self.finger_table[i].node.node_id
+                # If i-th finger is also (i+1)-th finger, no need to make request
+                self._try_push_finger_forward(i)
 
         predecessor = self.request_sender.request_previous_node(successor)
         if predecessor is None:
@@ -280,6 +278,22 @@ class ChordNode:
         if self.request_sender.propose_predecessor(successor, self.node_info) is None:
             return False
         return True
+
+    def _try_push_finger_forward(self, finger_number: int):
+        if finger_number + 1 >= self.id_bit_length:
+            return
+
+        current_id = self.finger_table[finger_number].node.node_id
+
+        while self.is_inside_right(self.node_info.node_id, current_id, self.finger_table[finger_number + 1].start):
+            # If i-th finger is also (i+1)-th finger, no need to make request
+            self.finger_table[finger_number + 1].node = self.finger_table[finger_number].node
+
+            finger_number += 1
+            if finger_number + 1 >= self.id_bit_length:
+                break
+
+            current_id = self.finger_table[finger_number].node.node_id
 
     # Gets data to replicate from a successor, supposing self.successor is alive and correct, and updates successor info
     def _replicate_from_successor(self) -> None:
@@ -339,13 +353,16 @@ class ChordNode:
 
     # Returns farthest node: NodeInfo **from finger_table**, such that id < node.id <= target_id
     def find_preceding_finger(self, target_id: int) -> NodeInfo:
-        for finger in reversed(self.finger_table):
+        for finger_number, finger in enumerate(reversed(self.finger_table)):
             if self.is_inside_right(self.node_info.node_id, target_id, finger.node.node_id):
                 if self.request_sender.ping(finger.node):
                     return finger.node
+                elif finger_number == 0:
+                    self._check_successor()
+                elif finger_number == self.module - 1:
+                    self.finger_table[self.module - 1] = self.node_info
                 else:
-                    # TODO: remove failed node from FTable
-                    pass
+                    self.finger_table[finger_number] = self.finger_table[finger_number + 1]
 
         return self.node_info
 
