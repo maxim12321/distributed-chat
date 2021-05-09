@@ -12,7 +12,7 @@ class ChatMessage(Serializable):
     def __init__(self, message_type: Optional[ChatMessageType] = None,
                  sender_id: Optional[int] = None,
                  context: Optional[bytes] = None):
-        self.type = message_type
+        self.type: Optional[ChatMessageType] = message_type
         self.sender_id: Optional[int] = sender_id
         self.context: Optional[bytes] = context
 

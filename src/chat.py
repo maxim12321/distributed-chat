@@ -60,30 +60,29 @@ class Chat(Serializable):
         message_type = Container[ChatMessageType]()
         message = MessageParser.parser(message) \
             .append_type(message_type) \
+            .begin_encrypted(self.private_key) \
             .parse()
 
         if message_type.get() == ChatMessageType.TEXT_MESSAGE:
-            self.message_handler.handle_text_message(message, self.private_key)
+            self.message_handler.handle_text_message(message)
             return None
 
         if message_type.get() == ChatMessageType.INTRODUCE_USER:
-            self.message_handler.handle_introduce_user(message, self.private_key)
+            self.message_handler.handle_introduce_user(message)
             return None
 
         if message_type.get() == ChatMessageType.GET_CHAT:
             message = MessageBuilder.builder() \
-                .begin_encrypted() \
                 .append_serializable(self) \
-                .encrypt(self.private_key) \
                 .build()
             return message
 
         if message_type.get() == ChatMessageType.IMAGE_MESSAGE:
-            self.message_handler.handle_image_message(message, self.private_key)
+            self.message_handler.handle_image_message(message)
             return None
 
         if message_type.get() == ChatMessageType.IMAGE_REQUEST:
-            return self.message_handler.handle_image_request(message, self.private_key)
+            return self.message_handler.handle_image_request(message)
 
     def get_chat_id(self) -> int:
         return self.chat_id

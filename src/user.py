@@ -19,7 +19,7 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
-        print(self.port)
+
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
@@ -67,10 +67,8 @@ class User:
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
-        message = self.chat_manager.build_send_text_message(chat_id,
-                                                            ChatMessage(ChatMessageType.TEXT_MESSAGE,
-                                                                        self.user_id,
-                                                                        data))
+        chat_message = ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id, data)
+        message = self.chat_manager.build_send_text_message(chat_id, chat_message)
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:

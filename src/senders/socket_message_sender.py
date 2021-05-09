@@ -27,16 +27,19 @@ class SocketMessageSender(MessageSender):
         self.listening_thread = threading.Thread(target=self._listen)
         self.listening_thread.start()
 
-    def send_message(self, target_ip: bytes, target_port: int, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, target_port: int, message: bytes) -> bool:
         sending_socket = self._connect(target_ip, target_port)
         if sending_socket is None:
-            return
+            return False
+        try:
+            message = MessageBuilder.message() \
+                .append_bytes(message) \
+                .build_with_length()
 
-        message = MessageBuilder.message() \
-            .append_bytes(message) \
-            .build_with_length()
-
-        sending_socket.send(message)
+            sending_socket.send(message)
+            return True
+        except ConnectionRefusedError:
+            return False
 
     def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
         sending_socket = self._send_request_message(target_ip, target_port, request)
@@ -62,13 +65,15 @@ class SocketMessageSender(MessageSender):
         sending_socket = self._connect(target_ip, target_port)
         if sending_socket is None:
             return None
+        try:
+            request = MessageBuilder.request() \
+                .append_bytes(request) \
+                .build_with_length()
 
-        request = MessageBuilder.request() \
-            .append_bytes(request) \
-            .build_with_length()
-
-        sending_socket.send(request)
-        return sending_socket
+            sending_socket.send(request)
+            return sending_socket
+        except ConnectionRefusedError:
+            return None
 
     def _long_polling_requests(self) -> None:
         while self.is_listening:
@@ -116,12 +121,9 @@ class SocketMessageSender(MessageSender):
                 if message_socket in self.long_polling_sockets.keys():
                     self.long_polling_sockets.pop(message_socket)
                 return None
-            try:
-                return message_socket.recv(message_length)
-            except ConnectionRefusedError:
-                return None
+            return message_socket.recv(message_length)
 
-        except socket.timeout:
+        except (socket.timeout, ConnectionRefusedError):
             return None
 
     def _listen(self) -> None:
@@ -157,10 +159,13 @@ class SocketMessageSender(MessageSender):
         if message_type.get() == MessageType.MESSAGE:
             self.handle_message(message_context.get())
         elif message_type.get() == MessageType.REQUEST:
-            answer = MessageBuilder.builder() \
-                .append_bytes(self.handle_request(message_context.get())) \
-                .build_with_length()
-            message_socket.send(answer)
+            try:
+                answer = MessageBuilder.builder() \
+                    .append_bytes(self.handle_request(message_context.get())) \
+                    .build_with_length()
+                message_socket.send(answer)
+            except ConnectionRefusedError:
+                pass
 
     def __del__(self) -> None:
         self.is_listening = False

@@ -31,40 +31,33 @@ class MessageHandler(Serializable):
         for user_info in data["user_info_list"]:
             self.users.append(UserInfo.from_dict(user_info))
 
-    def handle_text_message(self, message: bytes, private_key: bytes) -> None:
+    def handle_text_message(self, message: bytes) -> None:
         text_message = ChatMessage()
         MessageParser.parser(message) \
-            .begin_encrypted(private_key) \
             .append_serializable(text_message) \
-            .encrypt() \
             .parse()
         self.messages.append(text_message)
 
-    def handle_introduce_user(self, message_id: bytes, private_key: bytes) -> None:
+    def handle_introduce_user(self, message_id: bytes) -> None:
         user_info = UserInfo()
         MessageParser.parser(message_id) \
-            .begin_encrypted(private_key) \
             .append_serializable(user_info) \
-            .encrypt() \
             .parse()
         self.users.append(user_info)
 
-    def handle_image_message(self, message: bytes, private_key: bytes) -> None:
+    def handle_image_message(self, message: bytes) -> None:
         sender_id = Container[int]()
         image_hashes = MessageParser.parser(message) \
-            .begin_encrypted(private_key) \
             .append_id(sender_id) \
             .parse()
         self.messages.append(ChatMessage(ChatMessageType.IMAGE_MESSAGE, sender_id.get(), image_hashes))
 
-    def handle_image_request(self, message: bytes, private_key: bytes) -> bytes:
+    def handle_image_request(self, message: bytes) -> bytes:
         sender_id = Container[int]()
         context = Container[List[str]]()
         MessageParser.parser(message) \
-            .begin_encrypted(private_key) \
             .append_id(sender_id) \
             .append_object(context) \
-            .encrypt() \
             .parse()
 
         images = self.image_manager.get_images(context.get())
