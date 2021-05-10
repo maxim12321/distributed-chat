@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+
 import socket
 
 from src import constants
@@ -15,11 +16,11 @@ from src.user_info import UserInfo
 
 class User:
 
-    def __init__(self, username: str):
+    def __init__(self, username: Optional[str] = None):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
-
+        print(self.port)
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
@@ -33,8 +34,8 @@ class User:
     def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
 
-    def create_chat(self, chat_name: str) -> None:
-        self.chat_manager.create_chat(UserInfo(self.user_id, self.ip, self.port), chat_name)
+    def create_chat(self, chat_name: str) -> int:
+        return self.chat_manager.create_chat(UserInfo(self.user_id, self.ip, self.port), chat_name)
 
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id, self.ip, self.port)
@@ -52,7 +53,7 @@ class User:
         for address in addresses:
             self.byte_message_socket.send_message(address.ip, address.port, message)
 
-    def join_chat_by_link(self, invite_link: str) -> None:
+    def join_chat_by_link(self, invite_link: str) -> int:
         chat_id, private_key, ip, port = self.chat_manager.parse_invite_link(invite_link)
 
         message = self._build_get_chat_message(chat_id)
@@ -64,11 +65,13 @@ class User:
         self._broadcast_message(chat_id, message)
         # Then send myself
         self.byte_message_socket.send_message(self.ip, self.port, message)
+        return chat.get_chat_id()
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
-        chat_message = ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id, data)
-        message = self.chat_manager.build_send_text_message(chat_id, chat_message)
+        message = self.chat_manager.build_send_text_message(chat_id,
+                                                            ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id,
+                                                                        data))
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:
@@ -91,6 +94,12 @@ class User:
 
     def get_id(self) -> int:
         return self.user_id
+
+    def set_username(self, username: str) -> None:
+        self.username = username
+
+    def find_username(self, user_id: int) -> str:
+        return "TO DO"
 
     def __del__(self):
         self.byte_message_socket.__del__()

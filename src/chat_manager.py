@@ -18,7 +18,7 @@ class ChatManager:
     def add_chat(self, chat: Chat) -> None:
         self.chat_list[chat.get_chat_id()] = chat
 
-    def create_chat(self, user_info: UserInfo, chat_name: str) -> None:
+    def create_chat(self, user_info: UserInfo, chat_name: str) -> int:
         chat = Chat()
         chat.create(chat_name)
         message = MessageBuilder.builder() \
@@ -29,6 +29,7 @@ class ChatManager:
             .build()
         chat.handle_message(message)
         self.chat_list[chat.get_chat_id()] = chat
+        return chat.get_chat_id()
 
     def handle_message(self, message: bytes) -> Optional[bytes]:
         chat_id = Container[int]()

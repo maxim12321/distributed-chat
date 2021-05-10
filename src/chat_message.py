@@ -24,6 +24,7 @@ class ChatMessage(Serializable):
         }.items()
 
     def load_from_dict(self, data_dict: dict) -> None:
+        self.type = data_dict["type"]
         self.sender_id = data_dict["sender_id"]
         self.context = data_dict["context"]
 
