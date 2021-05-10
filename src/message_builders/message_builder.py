@@ -27,12 +27,6 @@ class MessageBuilder:
         self.data.extend(value)
         return self
 
-    def append_optional_bytes(self, value: Optional[bytes]) -> 'MessageBuilder':
-        self.data.extend(b'0' if value is None else b'1')
-        if value is not None:
-            self.append_bytes(value)
-        return self
-
     def append_string(self, value: str) -> 'MessageBuilder':
         self.append_bytes(value.encode("utf-8"))
         return self

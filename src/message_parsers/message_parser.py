@@ -31,12 +31,6 @@ class MessageParser:
         value.set(self._pop_bytes(length))
         return self
 
-    def append_optional_bytes(self, value: Container[bytes]) -> 'MessageParser':
-        optional_flag = self._pop_bytes(1)
-        if optional_flag == b'1':
-            self.append_bytes(value)
-        return self
-
     def append_string(self, value: Container[str]) -> 'MessageParser':
         data: Container[bytes] = Container()
         self.append_bytes(data)
