@@ -93,8 +93,6 @@ class SocketMessageSender(MessageSender):
 
     @staticmethod
     def receive_message(message_socket: socket) -> Optional[bytes]:
-        message_socket.settimeout(constants.MESSAGE_TIMEOUT)
-
         try:
             message_length = constants.to_int(message_socket.recv(constants.MESSAGE_LENGTH_BYTE_SIZE))
             if message_length == 0:

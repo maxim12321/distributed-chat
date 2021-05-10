@@ -2,11 +2,10 @@ import select
 import threading
 from dataclasses import dataclass
 from socket import socket
-from typing import Dict, Tuple, Callable, List
+from typing import Dict, Callable, List
 
 from src.message_parsers.message_parser import MessageParser
 from src.message_parsers.container import Container
-from src.message_builders.message_builder import MessageBuilder
 from src.senders.socket_message_sender import SocketMessageSender
 
 
@@ -38,13 +37,9 @@ class LongPollingRequests:
         self.on_long_polling_canceled = on_long_polling_canceled
 
     def send_answer(self, request: bytes, answer: bytes):
-        message = MessageBuilder.builder() \
-            .append_bytes(answer) \
-            .build_with_length()
-
         for info in self.long_polling_request[request]:
             try:
-                info.message_socket.sendall(message)
+                info.message_socket.sendall(answer)
             except ConnectionError:
                 self.long_polling_request[request].remove(info)
 
@@ -90,11 +85,7 @@ class LongPollingRequests:
                                                   self.long_polling_sockets[read_socket].request)
                     self.long_polling_sockets.pop(read_socket)
                 else:
-                    message_context = Container[bytes]()
-                    MessageParser.parser(answer) \
-                        .append_bytes(message_context) \
-                        .parse()
-                    self.message_sender.handle_message(message_context.get())
+                    self.message_sender.handle_message(answer)
 
     def __del__(self) -> None:
         self.is_listening = False
