@@ -71,6 +71,12 @@ class MessageBuilder:
         builder.append_type(MessageType.REQUEST)
         return builder
 
+    @staticmethod
+    def long_polling_request() -> 'MessageBuilder':
+        builder = MessageBuilder()
+        builder.append_type(MessageType.LONG_POLLING_REQUEST)
+        return builder
+
 
 T = TypeVar('T')
 

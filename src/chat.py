@@ -73,7 +73,9 @@ class Chat(Serializable):
 
         if message_type.get() == ChatMessageType.GET_CHAT:
             message = MessageBuilder.builder() \
+                .begin_encrypted() \
                 .append_serializable(self) \
+                .encrypt(self.private_key) \
                 .build()
             return message
 
