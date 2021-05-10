@@ -80,6 +80,14 @@ class Chat(Serializable):
             self.message_handler.handle_introduce_user(message)
             return None
 
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
+
         if message_type.get() == ChatMessageType.IMAGE_MESSAGE:
             self.message_handler.handle_image_message(message)
             return None

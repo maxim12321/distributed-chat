@@ -26,7 +26,7 @@ class User:
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
         self.byte_message_socket = SocketMessageSender(self.ip, self.port, self.message_redirection.handle,
-                                                       self.message_redirection.handle, self.message_redirection.handle)
+                                                       self.message_redirection.handle)
 
         self._configure_message_redirection()
 

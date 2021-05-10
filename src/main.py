@@ -1,4 +1,4 @@
-from user import User
+from src.user import User
 
 if __name__ == "__main__":
     username = input("Input your username: ")
