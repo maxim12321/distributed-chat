@@ -43,13 +43,11 @@ class Chat(Serializable):
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def generate_invite_link(self, ip_address: bytes, user_port: int) -> str:
-        user_port = str(user_port)
-        user_port = user_port.encode("utf-8")
         link = MessageBuilder.builder() \
             .append_id(self.chat_id) \
             .append_bytes(self.private_key) \
             .append_bytes(ip_address) \
-            .append_bytes(user_port) \
+            .append_bytes(constants.int_to_bytes(user_port)) \
             .build()
         return constants.bytes_to_string(link)
 
@@ -60,6 +58,17 @@ class Chat(Serializable):
         message_type = Container[ChatMessageType]()
         message = MessageParser.parser(message) \
             .append_type(message_type) \
+            .parse()
+
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
+
+        message = MessageParser.parser(message) \
             .begin_encrypted(self.private_key) \
             .parse()
 

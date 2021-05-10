@@ -27,19 +27,28 @@ class MessageBuilder:
         self.data.extend(value)
         return self
 
+    def append_string(self, value: str) -> 'MessageBuilder':
+        self.append_bytes(value.encode("utf-8"))
+        return self
+
     def append_bytes_list(self, value: List[bytes]) -> 'MessageBuilder':
         value_dicts = [constants.bytes_to_dict(element) for element in value]
         self.append_object(value_dicts)
         return self
 
     def append_object(self, value: object) -> 'MessageBuilder':
-        data = json.dumps(value).encode("utf-8")
-        self.append_bytes(data)
+        data = json.dumps(value)
+        self.append_string(data)
         return self
 
-    def append_serializable(self, value: Serializable):
+    def append_serializable(self, value: Serializable) -> 'MessageBuilder':
         data = dict(value)
         self.append_object(data)
+        return self
+
+    def append_serializable_list(self, values: List[Serializable]) -> 'MessageBuilder':
+        value_dicts: List[dict] = [dict(value) for value in values]
+        self.append_object(value_dicts)
         return self
 
     def begin_authenticated(self) -> 'AuthenticatedBuilder':

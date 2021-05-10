@@ -33,7 +33,7 @@ class SocketMessageSender(MessageSender):
 
             sending_socket.send(message)
             return True
-        except ConnectionRefusedError:
+        except ConnectionError:
             return False
 
     def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
@@ -82,14 +82,11 @@ class SocketMessageSender(MessageSender):
     def _connect(target_ip: bytes, target_port: int) -> Optional[socket.socket]:
         destination_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        for _ in range(constants.MAX_CONNECTION_TRIES_COUNT):
-            try:
-                destination_socket.connect((socket.inet_ntoa(target_ip), target_port))
-                return destination_socket
-            except ConnectionError:
-                continue
-
-        return None
+        try:
+            destination_socket.connect((socket.inet_ntoa(target_ip), target_port))
+            return destination_socket
+        except ConnectionError:
+            return None
 
     @staticmethod
     def receive_message(message_socket: socket) -> Optional[bytes]:
@@ -104,6 +101,11 @@ class SocketMessageSender(MessageSender):
         except ConnectionError:
             return None
 
+    def _handle_connection(self, message_socket: socket.socket) -> None:
+        message = self.receive_message(message_socket)
+        if message is not None:
+            self._process_message(message, message_socket)
+
     def _listen(self) -> None:
         listening_socket = self._create_socket(constants.LISTENING_TIMEOUT)
 
@@ -111,11 +113,8 @@ class SocketMessageSender(MessageSender):
             try:
                 message_socket, address = listening_socket.accept()
 
-                message = self.receive_message(message_socket)
-                if message is None:
-                    continue
-
-                self._process_message(message, message_socket)
+                thread = threading.Thread(target=self._handle_connection, args=(message_socket,))
+                thread.start()
 
             except socket.timeout:
                 pass
@@ -123,13 +122,14 @@ class SocketMessageSender(MessageSender):
     def _create_socket(self, timeout: float) -> socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.bind((socket.inet_ntoa(self.ip), self.port))
-        sock.listen(1)
+        sock.listen(10)
         sock.settimeout(timeout)
         return sock
 
     def _process_message(self, message: bytes, message_socket: socket) -> None:
         message_type = Container[MessageType]()
         message_context = Container[bytes]()
+
         message = MessageParser.parser(message) \
             .append_type(message_type) \
             .parse()
@@ -141,6 +141,7 @@ class SocketMessageSender(MessageSender):
         MessageParser.parser(message) \
             .append_bytes(message_context) \
             .parse()
+
         if message_type.get() == MessageType.MESSAGE:
             self.handle_message(message_context.get())
             return

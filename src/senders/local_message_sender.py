@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Callable, Dict, List, Tuple
+from typing import Optional, Callable, Dict, List
 from src.senders.message_sender import MessageSender
 import threading
 

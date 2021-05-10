@@ -28,6 +28,32 @@ class ChordTests(unittest.TestCase):
 
             self.simulator.remove_random_node()
 
+    def test_data_appending(self) -> None:
+        for _ in range(constants.REPLICATION_FACTOR):
+            self.simulator.add_random_node()
+
+        for _ in range(100):
+            key = self.simulator.set_random_value()
+
+            for _ in range(50):
+                self.simulator.append_value(key, b'42')
+                self.assertTrue(self.simulator.check_value(key))
+
+    def test_data_updating(self) -> None:
+        for _ in range(constants.REPLICATION_FACTOR):
+            self.simulator.add_random_node()
+
+        for _ in range(100):
+            self.simulator.add_random_node()
+
+            key = self.simulator.set_random_value()
+            for _ in range(50):
+                self.simulator.append_value(key, b'42')
+
+            for _ in range(100):
+                self.simulator.edit_random_value(key)
+                self.assertTrue(self.simulator.check_value(key))
+
     def test_replication_pushing(self) -> None:
         for _ in range(10):
             self.simulator.add_random_node()
@@ -52,7 +78,8 @@ class ChordTests(unittest.TestCase):
                 self.assertTrue(self.simulator.check_random_value())
 
             for _ in range(30):
-                key = self.simulator.append_random_value()
+                key = self.simulator.set_random_value()
+                self.simulator.set_value(key, b'42')
                 self.assertTrue((self.simulator.check_value(key)))
 
             for _ in range(20):
@@ -65,7 +92,6 @@ class ChordTests(unittest.TestCase):
         key = self.simulator.set_random_value()
 
         for i in range(1, constants.REPLICATION_FACTOR + 10):
-            self.simulator.print_replication()
             self.assertEqual(min(i, constants.REPLICATION_FACTOR), self.simulator.count_replicas(key))
             self.simulator.add_random_node()
 

@@ -22,13 +22,24 @@ class ReplicationManager:
     def get_info(self) -> ReplicationInfo:
         return self.info
 
+    def get_replication_coefficient(self, key: InfoKey) -> Optional[int]:
+        if self.info.get_value(key) is None:
+            return None
+        return self.info.get_value(key).current_index
+
     def set_data(self, current_id: int, key: InfoKey, data: bytes) -> None:
         self.info.add_info(key, InfoValue(constants.REPLICATION_FACTOR, current_id))
         self.data.set_data(key, data)
 
-    def append_data(self, current_id: int, key: InfoKey, data: bytes) -> None:
-        self.info.add_info(key, InfoValue(constants.REPLICATION_FACTOR, current_id))
-        self.data.append_data(key, data)
+    def append_data(self, current_id: int, key: InfoKey, data: bytes,
+                    current_index: Optional[int] = None) -> int:
+        if current_index is None:
+            current_index = constants.REPLICATION_FACTOR
+        self.info.add_info(key, InfoValue(current_index, current_id))
+        return self.data.append_data(key, data)
+
+    def try_edit_data(self, key: InfoKey, index: int, new_data: bytes) -> bool:
+        return self.data.try_edit_data(key, index, new_data)
 
     def drop_data_with_id_inside(self, left_id: int, right_id: int) -> None:
         keys_to_remove = self.info.get_keys_with_id_inside(left_id, right_id)

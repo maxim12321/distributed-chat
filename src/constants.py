@@ -16,7 +16,7 @@ PORT_ID: int = 8080
 MAX_CONNECTION_TRIES_COUNT: int = 14
 WAITING_TIME_FOR_NEXT_CONNECTION: float = 0.313
 LISTENING_TIMEOUT: float = 2
-MESSAGE_TIMEOUT: float = 3
+MESSAGE_TIMEOUT: float = 10
 
 INDENT: int = 4
 
@@ -34,6 +34,15 @@ def message_length_to_bytes(length: int) -> bytes:
 
 def id_to_bytes(object_id: int) -> bytes:
     return object_id.to_bytes(ID_LENGTH, BYTE_ORDER)
+
+
+def int_to_bytes(value: int) -> bytes:
+    byte_length = (value.bit_length() + 7) // 8
+    return value.to_bytes(byte_length, BYTE_ORDER)
+
+
+def bytes_to_int(value: bytes) -> int:
+    return int.from_bytes(value, BYTE_ORDER)
 
 
 def to_int(message_type: bytes) -> int:
