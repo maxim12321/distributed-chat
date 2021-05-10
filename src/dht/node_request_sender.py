@@ -70,7 +70,7 @@ class NodeRequestSender(ABC):
         pass
 
     @abstractmethod
-    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[int]:
         pass
 
     @abstractmethod

@@ -83,7 +83,8 @@ class TestNodeRequestSender(NodeRequestSender):
     def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
             return None
-        return deepcopy(self.nodes[node.node_id].get_value(deepcopy(key)))
+        result = self.nodes[node.node_id].get_value(deepcopy(key))
+        return b'' if result is None else result
 
     def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
         if node.node_id not in self.nodes.keys():
@@ -96,11 +97,10 @@ class TestNodeRequestSender(NodeRequestSender):
         self.nodes[node.node_id].set_value(deepcopy(key), deepcopy(value))
         return b''
 
-    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[int]:
         if node.node_id not in self.nodes.keys():
             return None
-        self.nodes[node.node_id].append_value(deepcopy(key), value)
-        return b''
+        return self.nodes[node.node_id].append_value(deepcopy(key), value)
 
     def append_replication(self, node: NodeInfo, key: InfoKey, value: bytes, current_index: int) -> bool:
         if node.node_id not in self.nodes.keys():

@@ -366,7 +366,7 @@ class ChordNodeRequestSender(NodeRequestSender):
 
         value: Container[bytes] = Container()
         MessageParser.parser(answer) \
-            .append_optional_bytes(value) \
+            .append_bytes(value) \
             .parse()
         return value.get()
 
@@ -379,9 +379,11 @@ class ChordNodeRequestSender(NodeRequestSender):
         info_key = InfoKey.from_string(key_string.get())
 
         answer: Optional[bytes] = self.node.get_value(info_key)
+        if answer is None:
+            answer = b''
 
         return MessageBuilder.builder() \
-            .append_optional_bytes(answer) \
+            .append_bytes(answer) \
             .build()
 
     def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
@@ -433,11 +435,12 @@ class ChordNodeRequestSender(NodeRequestSender):
         self.node.set_value(info_key, value)
         return b''
 
-    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[int]:
         if node.node_id == self.node_id:
-            return constants.int_to_bytes(self.node.append_value(key, value))
+            return self.node.append_value(key, value)
 
-        return self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
+        index_bytes = self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
+        return constants.bytes_to_int(index_bytes)
 
     def append_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)

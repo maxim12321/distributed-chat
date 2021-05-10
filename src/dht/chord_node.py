@@ -44,10 +44,10 @@ class ChordNode:
     def append_value_by_key(self, key: InfoKey, value: bytes) -> int:
         data_successor = self.find_successor(key.data_id)
 
-        index_bytes = self.request_sender.append_value(data_successor, key, value)
-        if index_bytes is None:
+        index = self.request_sender.append_value(data_successor, key, value)
+        if index is None:
             return self.append_value_by_key(key, value)
-        return constants.bytes_to_int(index_bytes)
+        return index
 
     def edit_value_by_key(self, key: InfoKey, index: int, value: bytes) -> None:
         data_successor = self.find_successor(key.data_id)
@@ -68,7 +68,7 @@ class ChordNode:
         return self.successor
 
     def get_previous_node(self) -> NodeInfo:
-        self._check_predecessor()
+        self.check_predecessor()
         return self.predecessor
 
     def get_replication_info(self) -> ReplicationInfo:
@@ -141,7 +141,7 @@ class ChordNode:
 
     # possible_predecessor is proposed as a self.predecessor
     def update_previous_node(self, possible_predecessor: NodeInfo) -> None:
-        self._check_predecessor()
+        self.check_predecessor()
 
         # If self has no predecessor, update it
         if self.predecessor.node_id == self.node_info.node_id:
@@ -164,19 +164,10 @@ class ChordNode:
         while not self._init_finger_table(successor):
             successor = self.request_sender.request_successor(other_node, self.node_info.node_id)
 
-        self._update_successor_list()
+        self.update_successor_list()
         self._update_other_nodes()
         self._replicate_from_successor()
         self._update_replication_from_predecessor()
-
-    # Should be called periodically, fixes predecessor and successors
-    def stabilize(self) -> None:
-        self._check_successor()
-        self._check_possible_successor()
-
-        self._update_successor_list()
-
-        self._check_predecessor()
 
     # Should be called periodically, fixes one finger, needs m calls to fix all fingers
     def fix_finger(self) -> None:
@@ -190,7 +181,7 @@ class ChordNode:
             self.last_updated_finger = 1
 
     # Tries to update successor from current successor's predecessor
-    def _check_possible_successor(self) -> None:
+    def check_possible_successor(self) -> None:
         possible_successor = self.request_sender.request_previous_node(self.successor)
         while possible_successor is None:
             possible_successor = self.request_sender.request_previous_node(self.get_next_node())
@@ -198,10 +189,10 @@ class ChordNode:
         if self.is_inside_right(self.node_info.node_id, self.successor.node_id, possible_successor.node_id):
             if possible_successor.node_id != self.successor.node_id:
                 self._set_successor(possible_successor)
-                self._check_possible_successor()
+                self.check_possible_successor()
 
         if self.request_sender.propose_predecessor(self.successor, self.node_info) is None:
-            self._check_possible_successor()
+            self.check_possible_successor()
 
     # If successor failed, finds nearest new successor and updates successor list
     def _check_successor(self) -> None:
@@ -211,8 +202,8 @@ class ChordNode:
         for successor in self.successor_list:
             if self.request_sender.ping(successor):
                 self._set_successor(successor)
-                self._check_possible_successor()
-                self._update_successor_list()
+                self.check_possible_successor()
+                self.update_successor_list()
 
                 if self.request_sender.propose_predecessor(successor, self.node_info) is None:
                     continue
@@ -221,7 +212,7 @@ class ChordNode:
         self._set_successor(self.node_info)
 
     # Can be called when successor is correct and alive
-    def _update_successor_list(self) -> None:
+    def update_successor_list(self) -> None:
         next_list = self.request_sender.request_successor_list(self.successor)
         while next_list is None:
             next_list = self.request_sender.request_successor_list(self.get_next_node())
@@ -233,7 +224,7 @@ class ChordNode:
         self.successor_list.extend(next_list)
 
     # If predecessor failed, sets self as a predecessor
-    def _check_predecessor(self) -> None:
+    def check_predecessor(self) -> None:
         if self.predecessor.node_id == self.successor.node_id:
             return
 
@@ -281,7 +272,7 @@ class ChordNode:
                 self.finger_table[finger_number].node = node
 
             while self.request_sender.propose_finger_update(self.predecessor, node, finger_number) is None:
-                self._check_predecessor()
+                self.check_predecessor()
 
     # Sets fingers, assuming that successor is self.successor in the ring
     def _init_finger_table(self, successor: NodeInfo) -> bool:
@@ -359,7 +350,7 @@ class ChordNode:
         # self.stabilize()
         # self._check_possible_successor()
         self._check_successor()
-        self._update_successor_list()
+        self.update_successor_list()
         # self._check_predecessor()
 
         _, successor = self._find_predecessor(target_id)
@@ -424,7 +415,7 @@ class ChordNode:
 
         replication_info = self.request_sender.request_replication_info(self.predecessor)
         while replication_info is None:
-            self._check_predecessor()
+            self.check_predecessor()
             self._update_replication_from_predecessor()
             return
 

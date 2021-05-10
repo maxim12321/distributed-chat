@@ -119,6 +119,7 @@ class ChordSimulator:
             # Make some stabilization and try again
             node = self._get_successor(key.data_id)
             for i in range(constants.REPLICATION_FACTOR):
+                node.update_successor_list()
                 for _ in range(self.id_bit_length):
                     node.fix_finger()
                 node = self.nodes[node.get_next_node().node_id]
