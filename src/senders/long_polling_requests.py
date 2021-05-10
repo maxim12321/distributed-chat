@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from socket import socket
 from typing import Dict, Callable, List
 
+from src.message_builders.message_builder import MessageBuilder
 from src.message_parsers.message_parser import MessageParser
 from src.message_parsers.container import Container
 from src.senders.socket_message_sender import SocketMessageSender
@@ -38,9 +39,13 @@ class LongPollingRequests:
         self.on_long_polling_canceled = on_long_polling_canceled
 
     def send_answer(self, request: bytes, answer: bytes):
+        message = MessageBuilder.builder()\
+            .append_bytes(answer)\
+            .build()
+
         for info in self.long_polling_request[request]:
             try:
-                info.message_socket.sendall(answer)
+                info.message_socket.sendall(message)
             except ConnectionError:
                 self.long_polling_request[request].remove(info)
 
