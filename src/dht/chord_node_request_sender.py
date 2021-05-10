@@ -30,7 +30,9 @@ class ChordRequestType(IntEnum):
     GET_VALUE = 12,
     GET_ALL_VALUES = 13,
     SET_VALUE = 14,
-    APPEND_VALUE = 15
+    APPEND_VALUE = 15,
+    APPEND_REPLICATION = 16,
+    EDIT_VALUE = 17
 
 
 class ChordNodeRequestSender(NodeRequestSender):
@@ -57,6 +59,8 @@ class ChordNodeRequestSender(NodeRequestSender):
             ChordRequestType.GET_ALL_VALUES: self.get_all_values_answer,
             ChordRequestType.SET_VALUE: self.set_value_receive,
             ChordRequestType.APPEND_VALUE: self.append_value_receive,
+            ChordRequestType.APPEND_REPLICATION: self.append_replication_receive,
+            ChordRequestType.EDIT_VALUE: self.edit_value_receive
         }
 
     def set_message_sender(self, message_sender: MessageSender) -> None:
@@ -431,15 +435,54 @@ class ChordNodeRequestSender(NodeRequestSender):
 
     def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id == self.node_id:
-            self.node.append_value(key, value)
-            return b''
+            return constants.int_to_bytes(self.node.append_value(key, value))
 
         return self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
 
     def append_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)
 
-        self.node.append_value(info_key, value)
+        return constants.int_to_bytes(self.node.append_value(info_key, value))
+
+    def append_replication(self, node: NodeInfo, key: InfoKey, value: bytes, current_index: int) -> bool:
+        if node.node_id == self.node_id:
+            self.node.append_replication(key, value, current_index)
+            return True
+
+        message = MessageBuilder.builder() \
+            .append_type(ChordRequestType.APPEND_REPLICATION) \
+            .append_string(str(key)) \
+            .append_bytes(constants.int_to_bytes(current_index)) \
+            .append_bytes(value) \
+            .build()
+
+        return self.message_sender.send_request(node.node_ip, node.node_port, message) is not None
+
+    def append_replication_receive(self, data: bytes) -> bytes:
+        info_key, current_index, value = self._receive_key_value_index(data)
+
+        self.node.append_replication(info_key, value, current_index)
+        return b''
+
+    def edit_value(self, node: NodeInfo, key: InfoKey, index: int, new_value: bytes) -> bool:
+        if node.node_id == self.node_id:
+            self.node.edit_value(key, index, new_value)
+            return True
+
+        request = MessageBuilder.builder() \
+            .append_type(ChordRequestType.EDIT_VALUE) \
+            .append_string(str(key)) \
+            .append_bytes(constants.int_to_bytes(index)) \
+            .append_bytes(new_value) \
+            .build()
+
+        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        return answer is not None
+
+    def edit_value_receive(self, data: bytes) -> bytes:
+        info_key, index, new_value = self._receive_key_value_index(data)
+
+        self.node.edit_value(info_key, index, new_value)
         return b''
 
     def _make_node_info_request(self, node: NodeInfo, request: bytes) -> Optional[NodeInfo]:
@@ -474,6 +517,20 @@ class ChordNodeRequestSender(NodeRequestSender):
             .parse()
 
         return InfoKey.from_string(key_string.get()), value.get()
+
+    @staticmethod
+    def _receive_key_value_index(data: bytes) -> Tuple[InfoKey, int, bytes]:
+        key_string: Container[str] = Container()
+        current_index_bytes: Container[bytes] = Container()
+        value: Container[bytes] = Container()
+
+        MessageParser.parser(data) \
+            .append_string(key_string) \
+            .append_bytes(value) \
+            .append_bytes(current_index_bytes) \
+            .parse()
+
+        return InfoKey.from_string(key_string.get()), constants.bytes_to_int(current_index_bytes.get()), value.get()
 
     @staticmethod
     def _answer_node_info_by_id(data: bytes, id_to_node_info: Callable[[int], NodeInfo]) -> bytes:

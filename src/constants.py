@@ -35,6 +35,15 @@ def id_to_bytes(object_id: int) -> bytes:
     return object_id.to_bytes(ID_LENGTH, BYTE_ORDER)
 
 
+def int_to_bytes(value: int) -> bytes:
+    byte_length = (value.bit_length() + 7) // 8
+    return value.to_bytes(byte_length, BYTE_ORDER)
+
+
+def bytes_to_int(value: bytes) -> int:
+    return int.from_bytes(value, BYTE_ORDER)
+
+
 def to_int(message_type: bytes) -> int:
     return int.from_bytes(message_type, BYTE_ORDER)
 

@@ -53,6 +53,13 @@ class ChordSimulator:
             self.stored_data[key] = list()
         self.stored_data[key].append(value)
 
+    def edit_value(self, key: InfoKey, index: int, new_value: bytes) -> None:
+        target_node = self._get_successor(key.data_id)
+
+        target_node.edit_value(key, index, new_value)
+
+        self.stored_data[key][index] = new_value
+
     def get_value(self, key: InfoKey) -> Optional[bytes]:
         target_node = self._get_successor(key.data_id)
 
@@ -95,6 +102,11 @@ class ChordSimulator:
         self.append_value(random_key, random_value)
         return random_key
 
+    def edit_random_value(self, key: InfoKey) -> None:
+        random_index = random.randrange(0, len(self.stored_data[key]))
+        random_value = os.urandom(10)
+        self.edit_value(key, random_index, random_value)
+
     def check_random_value(self) -> bool:
         random_key: InfoKey = random.choice(list(self.stored_data.keys()))
         return self.check_value(random_key)
@@ -126,10 +138,15 @@ class ChordSimulator:
                   f"{self._get_successor(key.data_id).successor_list}")
             return False
 
-        values = self.get_all_values(key)
-        if values != self.stored_data[key]:
-            print(f"ERROR! Got {values}, but {self.stored_data[key]} expected")
-            return False
+        for node in self.get_nodes_replicating_key(key):
+            values = node.get_all_values(key)
+            if values != self.stored_data[key]:
+                print(f"ERROR! Got {values}, but {self.stored_data[key]} expected")
+                print(f"\nKey {key} replication:")
+                for node in self.get_nodes_replicating_key(key):
+                    print(f"Node {node.node_info.node_id} replica: "
+                          f"{node.replication_manager.get_data(key)}")
+                return False
 
         return True
 

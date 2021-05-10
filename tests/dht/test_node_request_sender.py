@@ -83,24 +83,36 @@ class TestNodeRequestSender(NodeRequestSender):
     def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_value(key)
+        return deepcopy(self.nodes[node.node_id].get_value(deepcopy(key)))
 
     def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
         if node.node_id not in self.nodes.keys():
             return None
-        return self.nodes[node.node_id].get_all_values(key)
+        return deepcopy(self.nodes[node.node_id].get_all_values(deepcopy(key)))
 
     def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
             return None
-        self.nodes[node.node_id].set_value(key, value)
+        self.nodes[node.node_id].set_value(deepcopy(key), deepcopy(value))
         return b''
 
     def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
             return None
-        self.nodes[node.node_id].append_value(key, value)
+        self.nodes[node.node_id].append_value(deepcopy(key), value)
         return b''
+
+    def append_replication(self, node: NodeInfo, key: InfoKey, value: bytes, current_index: int) -> bool:
+        if node.node_id not in self.nodes.keys():
+            return False
+        self.nodes[node.node_id].append_replication(deepcopy(key), value, current_index)
+        return True
+
+    def edit_value(self, node: NodeInfo, key: InfoKey, index: int, new_value: bytes) -> bool:
+        if node.node_id not in self.nodes.keys():
+            return False
+        self.nodes[node.node_id].edit_value(deepcopy(key), index, new_value)
+        return True
 
     # Returns node, such that node.id >= target_id, used just for validating result in simulator
     def get_real_successor(self, target_id) -> NodeInfo:

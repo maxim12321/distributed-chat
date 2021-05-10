@@ -41,10 +41,19 @@ class ChordNode:
         if self.request_sender.set_value(data_successor, key, value) is None:
             self.set_value_by_key(key, value)
 
-    def append_value_by_key(self, key: InfoKey, value: bytes) -> None:
+    def append_value_by_key(self, key: InfoKey, value: bytes) -> int:
         data_successor = self.find_successor(key.data_id)
-        if self.request_sender.append_value(data_successor, key, value) is None:
-            self.append_value_by_key(key, value)
+
+        index_bytes = self.request_sender.append_value(data_successor, key, value)
+        if index_bytes is None:
+            return self.append_value_by_key(key, value)
+        return constants.bytes_to_int(index_bytes)
+
+    def edit_value_by_key(self, key: InfoKey, index: int, value: bytes) -> None:
+        data_successor = self.find_successor(key.data_id)
+
+        if not self.request_sender.edit_value(data_successor, key, index, value):
+            self.edit_value_by_key(key, index, value)
 
     # Just for testing
     def get_node_info(self) -> NodeInfo:
@@ -78,9 +87,18 @@ class ChordNode:
         self.replication_manager.set_data(self.node_info.node_id, key, value)
         self._push_key_replication(key)
 
-    def append_value(self, key: InfoKey, value: bytes) -> None:
-        self.replication_manager.append_data(self.node_info.node_id, key, value)
-        self._push_key_replication(key)
+    def append_value(self, key: InfoKey, value: bytes) -> int:
+        if self.replication_manager.get_replication_coefficient(key) is None:
+            self.set_value(key, value)
+            return 0
+        return self.append_replication(key, value, constants.REPLICATION_FACTOR)
+
+    def edit_value(self, key: InfoKey, index: int, new_value: bytes) -> None:
+        if not self.replication_manager.try_edit_data(key, index, new_value):
+            return
+
+        while not self.request_sender.edit_value(self.successor, key, index, new_value):
+            self._check_successor()
 
     # Finds replication for a given key and pushes updates to the successor
     def _push_key_replication(self, key: InfoKey) -> None:
@@ -107,6 +125,19 @@ class ChordNode:
         if info_to_push.get_size() > 0:
             while self.request_sender.update_replication(self.successor, info_to_push, new_data) is None:
                 self._check_successor()
+
+    def append_replication(self, key: InfoKey, value: bytes, current_index: int) -> int:
+        index: Optional[int] = self.replication_manager.get_replication_coefficient(key)
+        if index is None or index != current_index:
+            return 0
+
+        data_index = self.replication_manager.append_data(self.node_info.node_id, key, value, current_index=index)
+        if index == 1:
+            return 0
+
+        while not self.request_sender.append_replication(self.successor, key, value, current_index - 1):
+            self._check_successor()
+        return data_index
 
     # possible_predecessor is proposed as a self.predecessor
     def update_previous_node(self, possible_predecessor: NodeInfo) -> None:

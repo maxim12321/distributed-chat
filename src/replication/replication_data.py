@@ -21,10 +21,22 @@ class ReplicationData(Serializable):
     def set_data(self, key: InfoKey, value: bytes) -> None:
         self.data[key] = [value]
 
-    def append_data(self, key: InfoKey, value: bytes) -> None:
+    def append_data(self, key: InfoKey, value: bytes) -> int:
         if self.get_data(key) is None:
             self.data[key] = list()
         self.data[key].append(value)
+        return len(self.data[key]) - 1
+
+    def try_edit_data(self, key: InfoKey, index: int, new_value: bytes) -> bool:
+        if key not in self.data:
+            return False
+        if index < 0 or index >= len(self.data[key]):
+            return False
+        if self.data[key][index] == new_value:
+            return False
+
+        self.data[key][index] = new_value
+        return True
 
     def remove_data(self, keys: List[InfoKey]) -> None:
         for key in keys:
