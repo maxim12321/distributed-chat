@@ -7,11 +7,12 @@ from typing import Dict, Callable, List
 from src.message_parsers.message_parser import MessageParser
 from src.message_parsers.container import Container
 from src.senders.socket_message_sender import SocketMessageSender
+import src.constants as constants
 
 
 @dataclass
 class LongPollInfo:
-    long_polling_id: int
+    long_poll_id: int
     message_socket: socket
 
 
@@ -66,7 +67,7 @@ class LongPollingRequests:
     def cancel_long_polling_request(self, long_polling_id: int) -> None:
         for key in self.long_polling_request.keys():
             for index, info in enumerate(self.long_polling_request[key]):
-                if info.long_polling_id == long_polling_id:
+                if info.long_poll_id == long_polling_id:
                     info.message_socket.close()
                     self.long_polling_request[key].pop(index)
 
@@ -76,7 +77,7 @@ class LongPollingRequests:
             if len(sockets) == 0:
                 continue
 
-            read_sockets, _, _ = select.select(sockets, sockets, sockets)
+            read_sockets, _, _ = select.select(sockets, [], [], constants.SELECT_TIMOUT)
             for read_socket in read_sockets:
                 answer = self.message_sender.receive_message(read_socket)
 
