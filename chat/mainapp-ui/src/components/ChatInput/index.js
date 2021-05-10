@@ -9,8 +9,8 @@ const ChatInput = props => (
   <div className="chat-input">
     <input className="chat-input-send" type="text" placeholder="Введите текст"/>
     <div className="chat-input__actions">
-      <img className="chat-input__actions-add" src={add_image} />
-      <img className="chat-input__actions-send" src={send_message} />
+      <img className="chat-input__actions-add" src={add_image} alt = "add_image" />
+      <img className="chat-input__actions-send" src={send_message} alt = "send_message"/>
     </div>
   </div>
 );

@@ -1,10 +1,7 @@
 import React from "react";
-import { Messages, Dialogs, ChatInput } from "../../components";
-import add_image from '../../resources/add_image.png';
+import { ChatInput } from "../../components";
+import { Dialogs, Messages } from "../../containers";
 import "./Home.scss";
-
-
-import dialogsJSON from "../../dialogs.json";
 
 const Home = () => (
   <section className="home">
@@ -15,11 +12,8 @@ const Home = () => (
             <span>Список диалогов</span>
           </div>
         </div>
-        <div className="chat__sidebar-search">
-           <input type='text' placeholder="Поиск" />
-        </div>
         <div className="chat__sidebar-dialogs">
-          <Dialogs items={dialogsJSON} />
+          <Dialogs  />
         </div>
       </div>
       <div className="chat__dialog">

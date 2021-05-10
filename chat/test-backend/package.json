@@ -1,0 +1,12 @@
+{
+  "name": "ddd",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "json-server --watch db.json --port 9999"
+  },
+  "devDependencies": {
+    "json-server": "^0.16.3"
+  }
+}

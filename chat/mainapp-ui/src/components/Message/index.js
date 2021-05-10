@@ -12,7 +12,7 @@ const Message = ({ avatar, user, text, date, isMe, attachments }) => (
   >
     <div className="message__content">
       <div className="message__avatar">
-        <img src={avatar} alt={`Avatar ${user.fullname}`} />
+        <img src={user.avatar} alt={`Avatar ${user.fullname}`} />
       </div>
       <div className="message__info">
         {text &&

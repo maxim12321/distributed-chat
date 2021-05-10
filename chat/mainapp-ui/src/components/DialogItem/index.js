@@ -3,9 +3,11 @@ import React from "react";
 import "./DialogItem.scss";
 import { Avatar } from "../"
 
-const DialogItem = ({ user, message }) => (
+const DialogItem = ({ _id, user, message, onSelect }) => (
   <div className="border">
-    <div className="dialogs__item">
+    <div className="dialogs__item"
+      onClick={onSelect.bind(this, _id)}
+    >
       <div className="dialogs__item-avatar">
         <Avatar user={user}/>
       </div>

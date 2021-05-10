@@ -1,0 +1,127 @@
+{
+  "dialogs": [
+    {
+      "_id": "4609945b81645197109a4ee3d",
+      "user": {
+        "fullname": "Franklin",
+        "avatar": null
+      },
+      "message": {
+        "text": "Nostrud consequat est officia duis est dolore id elit laboris officia cupidatat id aliqua laborum. Velit aliqua sunt elit ea velit elit. Ad non fugiat consectetur minim enim.",
+        "created": "20:30"
+      }
+    },
+    {
+      "_id": "460992205ac7f440606c1fbe5",
+      "user": {
+        "fullname": "Lindsey",
+        "avatar": null
+      },
+      "message": {
+        "text": "Dolor veniam velit ea dolore ea fugiat consectetur adipisicing deserunt commodo do consequat est consequat. Voluptate aliqua irure id pariatur exercitation adipisicing aute. Irure irure ipsum ex amet irure non eu occaecat.",
+        "created": "20:30"
+      }
+    },
+    {
+      "_id": "460992105ac7f440606c1fbe5",
+      "user": {
+        "fullname": "June",
+        "avatar": null
+      },
+      "message": {
+        "text": "Aliqua veniam est consectetur commodo nulla occaecat excepteur minim ad esse minim pariatur anim deserunt. Sint cupidatat aliqua magna sint ut minim ea. Aliquip laborum eiusmod sint consequat.",
+        "created": "20:30"
+      }
+    },
+    {
+      "_id": "460992105227f440606c1fbe5",
+      "user": {
+        "fullname": "Autumn",
+        "avatar": null
+      },
+      "message": {
+        "text": "Eiusmod excepteur anim adipisicing aliqua anim in sint consectetur dolor consectetur. Voluptate sint in ad proident pariatur. Reprehenderit fugiat sit qui ex officia do cupidatat.",
+        "created": "20:30"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "_id": "1609945b8ae8528abd03c10dc",
+      "text": "Laboris culpa tempor enim nulla est veniam. Deserunt cupidatat anim sit labore esse duis duis sunt mollit adipisicing enim ad. Cupidatat mollit sit laboris dolore ea amet fugiat duis laboris.",
+      "date": "Sat Mar 05 2016 16:34:08 GMT+0300 (Moscow Standard Time)",
+      "user": {
+        "_id": "2609945b8abe8d39110513ca0",
+        "fullname": "Jasmine White",
+        "avatar": null
+      },
+      "dialog": "4609945b81645197109a4ee3d"
+    },
+    {
+      "_id": "2609945b8e3298be685475ba1",
+      "text": "Ad ea amet consectetur in dolor reprehenderit ex ea voluptate aute adipisicing commodo. Voluptate consectetur laborum minim eiusmod proident duis aliqua in. Lorem esse tempor fugiat dolor enim laboris veniam nulla esse.",
+      "date": "Mon Sep 04 2000 05:05:58 GMT+0300 (Moscow Summer Time)",
+      "user": {
+        "_id": "2609945b8a689716f36c16225",
+        "fullname": "Burgess Goodman",
+        "avatar": null
+      },
+      "dialog": "4609945b81645197109a4ee3d"
+    },
+    {
+      "_id": "26099475fabd39afaafda307d",
+      "text": "Incididunt commodo mollit nostrud est esse laborum excepteur proident reprehenderit qui labore elit ipsum. Minim in cupidatat labore nulla excepteur. Occaecat nostrud minim id duis officia laborum consequat qui amet reprehenderit officia pariatur reprehenderit.",
+      "date": "15:00",
+      "user": {
+        "_id": "46099475f3846b8c24ccbbd50",
+        "fullname": "Wynn Tran",
+        "avatar": null
+      },
+      "dialog": "460992205ac7f440606c1fbe5"
+    },
+    {
+      "_id": "16099475ffcf8fe68abaa2aa1",
+      "text": "Reprehenderit anim velit aliqua quis dolor adipisicing consequat dolor nulla aliquip. Voluptate excepteur cupidatat occaecat non cupidatat excepteur esse pariatur. Nisi qui enim esse sunt officia nostrud in cupidatat nostrud sit.",
+      "date": "15:00",
+      "user": {
+        "_id": "46099475f2a347d98f311b863",
+        "fullname": "Stark Beasley",
+        "avatar": null
+      },
+      "dialog": "460992205ac7f440606c1fbe5"
+    },
+    {
+      "_id": "26099475fb16e3bf17f72630e",
+      "text": "Reprehenderit veniam est voluptate laborum elit. Ut veniam et ex elit mollit fugiat enim excepteur. Anim mollit labore qui enim qui ullamco laboris.",
+      "date": "15:00",
+      "user": {
+        "_id": "26099475f1a71b691abbef18b",
+        "fullname": "Miles Harding",
+        "avatar": null
+      },
+      "dialog": "460992205ac7f440606c1fbe5"
+    },
+    {
+      "_id": "46099475f641885f202eba2e7",
+      "text": "Pariatur esse et veniam excepteur sunt. Incididunt dolor laboris consequat dolor pariatur deserunt reprehenderit amet culpa ullamco. Pariatur esse commodo laborum officia fugiat adipisicing veniam nostrud occaecat duis fugiat.",
+      "date": "15:00",
+      "user": {
+        "_id": "36099475f2f25a66306a0540c",
+        "fullname": "Boyd Mckay",
+        "avatar": null
+      },
+      "dialog": "460992205ac7f440606c1fbe5"
+    },
+    {
+      "_id": "46099475f46b9cde751e27a18",
+      "text": "Fugiat adipisicing exercitation elit officia dolor id sint in ad ad occaecat enim ad. Ipsum deserunt tempor ad aliquip mollit irure aliqua laborum. Quis ipsum est id sunt velit occaecat proident consectetur culpa exercitation et.",
+      "date": "15:00",
+      "user": {
+        "_id": "26099475f8a0567e1eab18020",
+        "fullname": "Hodges Short",
+        "avatar": null
+      },
+      "dialog": "460992205ac7f440606c1fbe5"
+    }
+  ]
+}
