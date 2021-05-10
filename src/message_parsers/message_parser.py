@@ -44,7 +44,7 @@ class MessageParser:
         value.set(json.loads(data.get(), object_hook=json_decoder.decode))
         return self
 
-    def append_serializable(self, value: Serializable):
+    def append_serializable(self, value: Serializable) -> 'MessageParser':
         data: Container[dict] = Container()
         self.append_object(data)
         value.load_from_dict(data.get())
