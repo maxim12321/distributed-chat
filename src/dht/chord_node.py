@@ -84,13 +84,18 @@ class ChordNode:
         return self.replication_manager.get_data(key)
 
     def set_value(self, key: InfoKey, value: bytes) -> None:
-        self.replication_manager.set_data(self.node_info.node_id, key, value)
-        self._push_key_replication(key)
+        if self.replication_manager.get_replication_coefficient(key) is None:
+            self.replication_manager.set_data(self.node_info.node_id, key, value)
+            self._push_key_replication(key)
+        else:
+            self.edit_value(key, 0, value)
 
     def append_value(self, key: InfoKey, value: bytes) -> int:
         if self.replication_manager.get_replication_coefficient(key) is None:
-            self.set_value(key, value)
+            self.replication_manager.set_data(self.node_info.node_id, key, value)
+            self._push_key_replication(key)
             return 0
+
         return self.append_replication(key, value, constants.REPLICATION_FACTOR)
 
     def edit_value(self, key: InfoKey, index: int, new_value: bytes) -> None:

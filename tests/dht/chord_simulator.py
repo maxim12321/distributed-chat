@@ -119,6 +119,7 @@ class ChordSimulator:
             # Make some stabilization and try again
             node = self._get_successor(key.data_id)
             for i in range(constants.REPLICATION_FACTOR):
+                node.check_possible_successor()
                 node.update_successor_list()
                 for _ in range(self.id_bit_length):
                     node.fix_finger()
@@ -144,9 +145,9 @@ class ChordSimulator:
             if values != self.stored_data[key]:
                 print(f"ERROR! Got {values}, but {self.stored_data[key]} expected")
                 print(f"\nKey {key} replication:")
-                for node in self.get_nodes_replicating_key(key):
-                    print(f"Node {node.node_info.node_id} replica: "
-                          f"{node.replication_manager.get_data(key)}")
+                for replicating_node in self.get_nodes_replicating_key(key):
+                    print(f"Node {replicating_node.node_info.node_id} replica: "
+                          f"{replicating_node.replication_manager.get_data(key)}")
                 return False
 
         return True
