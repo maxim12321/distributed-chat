@@ -31,6 +31,11 @@ class MessageBuilder:
         self.append_bytes(value.encode("utf-8"))
         return self
 
+    def append_bytes_list(self, value: List[bytes]) -> 'MessageBuilder':
+        value_dicts = [constants.bytes_to_dict(element) for element in value]
+        self.append_object(value_dicts)
+        return self
+
     def append_object(self, value: object) -> 'MessageBuilder':
         data = json.dumps(value)
         self.append_string(data)

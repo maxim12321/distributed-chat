@@ -27,26 +27,26 @@ class SocketMessageSender(MessageSender):
         self.listening_thread = threading.Thread(target=self._listen)
         self.listening_thread.start()
 
-    def send_message(self, target_ip: bytes, target_port: int, message: bytes) -> None:
+    def send_message(self, target_ip: bytes, target_port: int, message: bytes) -> bool:
         sending_socket = self._connect(target_ip, target_port)
         if sending_socket is None:
-            return
+            return False
+        try:
+            message = MessageBuilder.message() \
+                .append_bytes(message) \
+                .build_with_length()
 
-        message = MessageBuilder.message() \
-            .append_bytes(message) \
-            .build_with_length()
-
-        sending_socket.send(message)
+            sending_socket.send(message)
+            return True
+        except ConnectionError:
+            return False
 
     def send_request(self, target_ip: bytes, target_port: int, request: bytes) -> Optional[bytes]:
         sending_socket = self._send_request_message(target_ip, target_port, request)
-        answer = self._receive_message(sending_socket)
-
-        if answer is None:
+        if sending_socket is None:
             return None
 
         answer = self._receive_message(sending_socket)
-
         if answer is None:
             return None
 
@@ -67,13 +67,15 @@ class SocketMessageSender(MessageSender):
         sending_socket = self._connect(target_ip, target_port)
         if sending_socket is None:
             return None
+        try:
+            request = MessageBuilder.request() \
+                .append_bytes(request) \
+                .build_with_length()
 
-        request = MessageBuilder.request() \
-            .append_bytes(request) \
-            .build_with_length()
-
-        sending_socket.send(request)
-        return sending_socket
+            sending_socket.send(request)
+            return sending_socket
+        except ConnectionError:
+            return None
 
     def _long_polling_requests(self) -> None:
         while self.is_listening:
@@ -103,7 +105,7 @@ class SocketMessageSender(MessageSender):
         try:
             destination_socket.connect((socket.inet_ntoa(target_ip), target_port))
             return destination_socket
-        except ConnectionRefusedError:
+        except ConnectionError:
             return None
 
     def _receive_message(self, message_socket: socket) -> Optional[bytes]:
@@ -118,12 +120,13 @@ class SocketMessageSender(MessageSender):
                 return None
             return message_socket.recv(message_length)
 
-        except socket.timeout:
+        except ConnectionError:
             return None
 
     def _handle_connection(self, message_socket: socket.socket) -> None:
         message = self._receive_message(message_socket)
-        self._process_message(message, message_socket)
+        if message is not None:
+            self._process_message(message, message_socket)
 
     def _listen(self) -> None:
         listening_socket = self._create_socket(constants.LISTENING_TIMEOUT)
@@ -156,10 +159,13 @@ class SocketMessageSender(MessageSender):
         if message_type.get() == MessageType.MESSAGE:
             self.handle_message(message_context.get())
         elif message_type.get() == MessageType.REQUEST:
-            answer = MessageBuilder.builder() \
-                .append_bytes(self.handle_request(message_context.get())) \
-                .build_with_length()
-            message_socket.send(answer)
+            try:
+                answer = MessageBuilder.builder() \
+                    .append_bytes(self.handle_request(message_context.get())) \
+                    .build_with_length()
+                message_socket.send(answer)
+            except ConnectionError:
+                pass
 
     def __del__(self) -> None:
         self.is_listening = False
