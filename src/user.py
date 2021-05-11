@@ -5,12 +5,14 @@ import socket
 from src import constants
 from src.byte_message_type import ByteMessageType
 from src.chat import Chat
+from src.chat_info import ChatInfo
 from src.chat_manager import ChatManager
+from src.chat_message import ChatMessage
 from src.chat_message_type import ChatMessageType
 from src.message_builders.message_builder import MessageBuilder
 from src.message_redirection import MessageRedirection
+from src.preferences import Preferences
 from src.senders.socket_message_sender import SocketMessageSender
-from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 
@@ -20,7 +22,8 @@ class User:
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
-        print(self.port)
+
+        self.preferences = Preferences()
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
@@ -35,7 +38,10 @@ class User:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
 
     def create_chat(self, chat_name: str) -> int:
-        return self.chat_manager.create_chat(UserInfo(self.user_id, self.ip, self.port), chat_name)
+        chat_id = self.chat_manager.create_chat(UserInfo(self.user_id, self.ip, self.port), chat_name)
+        chat_info = ChatInfo(chat_id, self.get_chat_info(chat_id).private_key)
+        self.preferences.save_object_to_array("chats", "chat_id", chat_info)
+        return chat_id
 
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id, self.ip, self.port)
@@ -60,6 +66,7 @@ class User:
         chat_data = self.byte_message_socket.send_request(ip, port, message)
         chat = self.chat_manager.parse_chat_data(chat_data, private_key)
         self.chat_manager.add_chat(chat)
+        self.preferences.save_object_to_array("chats", str(chat_id), private_key)
 
         message = self.chat_manager.build_introduce_message(chat_id, UserInfo(self.user_id, self.ip, self.port))
         self._broadcast_message(chat_id, message)
@@ -86,7 +93,9 @@ class User:
     def get_message_list(self, chat_id: int) -> List[ChatMessage]:
         return self.chat_manager.get_message_list(chat_id)
 
-    def get_username(self) -> str:
+    def get_username(self) -> Optional[str]:
+        username = self.preferences.load_primitive_type("username")
+        self.username = username
         return self.username
 
     def get_ip(self) -> bytes:
@@ -97,6 +106,7 @@ class User:
 
     def set_username(self, username: str) -> None:
         self.username = username
+        self.preferences.save_object("username", username)
 
     def find_username(self, user_id: int) -> str:
         return "TO DO"

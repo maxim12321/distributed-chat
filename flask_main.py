@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from flask import Flask, jsonify
 from src.user import User
@@ -19,10 +20,11 @@ def set_username(username: str) -> str:
 
 
 @app.route('/get_username/<user_id>')
-def get_username(user_id: str) -> str:
+def get_username(user_id: str) -> Optional[str]:
     user_id = int(user_id)
     if user_id == -1:
-        return user.get_username()
+        username = user.get_username()
+        return "" if username is None else username
     return user.find_username(user_id)
 
 
