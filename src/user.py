@@ -4,6 +4,7 @@ import socket
 from src import constants
 from src.byte_message_type import ByteMessageType
 from src.chat import Chat
+from src.chat_info import ChatInfo
 from src.chat_manager import ChatManager
 from src.chat_message import ChatMessage
 from src.chat_message_type import ChatMessageType
@@ -36,6 +37,19 @@ class User:
         self.hash_table = HashTable(self.user_id, self.socket_message_sender, self.message_redirection)
 
         self._configure_message_redirection()
+
+        self._load_chats()
+
+    def _load_chats(self) -> None:
+        chat_info = ChatInfo()
+        chats: List[ChatInfo] = self.preferences.load_array_of_objects("chats", chat_info)
+
+        existing_chats: List[ChatInfo] = []
+
+        for chat in chats:
+            if existing_chats.append(chat) is None:
+                # TODO: remove `chat` from preferences
+                pass
 
     def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
@@ -72,10 +86,15 @@ class User:
 
     def join_chat_by_link(self, invite_link: str) -> int:
         chat_id, private_key = self.chat_manager.parse_invite_link(invite_link)
+        return self._join_chat(chat_id, private_key)
 
+    def _join_chat(self, chat_id: int, private_key: bytes) -> Optional[int]:
         chat = Chat()
 
         chat_name_message = self.hash_table.get_single_value(ChatMessageType.SET_CHAT_NAME, chat_id)
+        if chat_name_message == b'':
+            return None
+
         chat.load(chat_id, private_key, chat_name_message)
 
         self._add_chat(chat)
@@ -91,6 +110,7 @@ class User:
     def _add_chat(self, chat: Chat) -> None:
         self.chat_manager.add_chat(chat)
         self.hash_table.subscribe(chat.chat_id, ChatMessageType.TEXT_MESSAGE)
+        self.preferences.save_object_to_array("chats", "chat_id", ChatInfo(chat.chat_id, chat.private_key))
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
