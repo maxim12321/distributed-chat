@@ -38,31 +38,29 @@ class User:
 
         self._configure_message_redirection()
 
-        self._load_chats()
-
     def _load_chats(self) -> None:
         chat_info = ChatInfo()
         chats: List[ChatInfo] = self.preferences.load_array_of_objects("chats", chat_info)
 
-        existing_chats: List[ChatInfo] = []
-
         for chat in chats:
-            if existing_chats.append(chat) is None:
-                # TODO: remove `chat` from preferences
-                pass
+            if self._join_chat(chat.chat_id, chat.private_key) is None:
+                self._push_chat_to_hash_table(Chat(chat.chat_id, chat.chat_name, chat.private_key))
 
     def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
 
     def create_chat(self, chat_name: str) -> int:
         chat = self.chat_manager.create_chat(chat_name)
+        self._push_chat_to_hash_table(chat)
+        return chat.chat_id
+
+    def _push_chat_to_hash_table(self, chat: Chat) -> None:
+        self._add_chat(chat)
         self.hash_table.set_value(ChatMessageType.SET_CHAT_NAME, chat.chat_id,
                                   chat.build_chat_name_message())
-        self._add_chat(chat)
 
         introduce_message = chat.build_introduce_message(self.user_info)
         self._broadcast_message(chat.chat_id, introduce_message)
-        return chat.chat_id
 
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id)
@@ -72,6 +70,7 @@ class User:
 
     def join_network_by_invite_link(self, invite_link: Optional[str]) -> None:
         self.hash_table.join(invite_link)
+        self._load_chats()
 
     @staticmethod
     def _build_get_chat_message(chat_id: int) -> bytes:
@@ -86,9 +85,12 @@ class User:
 
     def join_chat_by_link(self, invite_link: str) -> int:
         chat_id, private_key = self.chat_manager.parse_invite_link(invite_link)
-        return self._join_chat(chat_id, private_key)
+        chat = self._join_chat(chat_id, private_key)
 
-    def _join_chat(self, chat_id: int, private_key: bytes) -> Optional[int]:
+        self.preferences.save_object_to_array("chats", "chat_id", ChatInfo(chat_id, chat.chat_name, private_key))
+        return chat.chat_id
+
+    def _join_chat(self, chat_id: int, private_key: bytes) -> Optional[Chat]:
         chat = Chat()
 
         chat_name_message = self.hash_table.get_single_value(ChatMessageType.SET_CHAT_NAME, chat_id)
@@ -105,12 +107,12 @@ class User:
 
         message = self.chat_manager.build_introduce_message(chat_id, self.user_info)
         self._broadcast_message(chat_id, message)
-        return chat_id
+
+        return chat
 
     def _add_chat(self, chat: Chat) -> None:
         self.chat_manager.add_chat(chat)
         self.hash_table.subscribe(chat.chat_id, ChatMessageType.TEXT_MESSAGE)
-        self.preferences.save_object_to_array("chats", "chat_id", ChatInfo(chat.chat_id, chat.private_key))
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")

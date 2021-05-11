@@ -17,11 +17,14 @@ from src.user_info import UserInfo
 @dataclass
 class Chat(Serializable):
 
-    def __init__(self):
+    def __init__(self, chat_id: Optional[int] = None,
+                 chat_name: Optional[str] = None,
+                 private_key: Optional[bytes] = None):
+        self.chat_id: Optional[int] = chat_id
+        self.chat_name: Optional[str] = chat_name
+        self.private_key: Optional[bytes] = private_key
+
         self.message_handler = MessageHandler()
-        self.private_key: Optional[bytes] = None
-        self.chat_name: Optional[str] = None
-        self.chat_id: Optional[int] = None
 
     def __iter__(self) -> Generator[str, Any, None]:
         yield from {
