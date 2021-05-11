@@ -3,7 +3,7 @@ from enum import IntEnum
 import os
 
 PRIVATE_KEY_LENGTH: int = 16
-ID_LENGTH: int = 16
+ID_LENGTH: int = 2
 
 BYTE_ORDER: str = "big"
 TYPE_BYTE_SIZE: int = 1
@@ -11,11 +11,12 @@ MESSAGE_LENGTH_BYTE_SIZE: int = 4
 HMAC_BYTE_SIZE: int = 20
 BLOCK_SIZE_BYTES: int = 16
 
+SELECT_TIMOUT: int = 3
 PORT_ID: int = 8080
 MAX_CONNECTION_TRIES_COUNT: int = 14
 WAITING_TIME_FOR_NEXT_CONNECTION: float = 0.313
 LISTENING_TIMEOUT: float = 2
-MESSAGE_TIMEOUT: float = 3
+MESSAGE_TIMEOUT: float = 10
 
 INDENT: int = 4
 
@@ -33,6 +34,15 @@ def message_length_to_bytes(length: int) -> bytes:
 
 def id_to_bytes(object_id: int) -> bytes:
     return object_id.to_bytes(ID_LENGTH, BYTE_ORDER)
+
+
+def int_to_bytes(value: int) -> bytes:
+    byte_length = (value.bit_length() + 7) // 8
+    return value.to_bytes(byte_length, BYTE_ORDER)
+
+
+def bytes_to_int(value: bytes) -> int:
+    return int.from_bytes(value, BYTE_ORDER)
 
 
 def to_int(message_type: bytes) -> int:

@@ -10,8 +10,8 @@ from tests.dht.test_node_request_sender import TestNodeRequestSender
 
 class ChordSimulator:
     def __init__(self, id_power) -> None:
-        self.m = id_power
-        self.module = 2 ** self.m
+        self.id_bit_length = id_power
+        self.module = 2 ** self.id_bit_length
 
         self.nodes: Dict[int, ChordNode] = dict()
         self.request_sender: TestNodeRequestSender = TestNodeRequestSender(self.module)
@@ -23,7 +23,10 @@ class ChordSimulator:
         while node_id in self.nodes.keys():
             node_id = random.randint(0, self.module - 1)
 
-        chord_node = ChordNode(self.m, node_id, self.request_sender)
+        self.add_node(node_id)
+
+    def add_node(self, node_id: int) -> None:
+        chord_node = ChordNode(self.id_bit_length, node_id, b'0', 0, self.request_sender)
 
         self.nodes[node_id] = chord_node
         self.request_sender.add_node(node_id, chord_node)
@@ -32,6 +35,9 @@ class ChordSimulator:
         node_id = random.choice(list(self.nodes.keys()))
         self.nodes.pop(node_id)
 
+        self.remove_node(node_id)
+
+    def remove_node(self, node_id: int) -> None:
         self.request_sender.remove_node(node_id)
 
     def set_value(self, key: InfoKey, value: bytes) -> None:
@@ -49,6 +55,13 @@ class ChordSimulator:
         if key not in self.stored_data.keys():
             self.stored_data[key] = list()
         self.stored_data[key].append(value)
+
+    def edit_value(self, key: InfoKey, index: int, new_value: bytes) -> None:
+        target_node = self._get_successor(key.data_id)
+
+        target_node.edit_value(key, index, new_value)
+
+        self.stored_data[key][index] = new_value
 
     def get_value(self, key: InfoKey) -> Optional[bytes]:
         target_node = self._get_successor(key.data_id)
@@ -92,6 +105,11 @@ class ChordSimulator:
         self.append_value(random_key, random_value)
         return random_key
 
+    def edit_random_value(self, key: InfoKey) -> None:
+        random_index = random.randrange(0, len(self.stored_data[key]))
+        random_value = os.urandom(10)
+        self.edit_value(key, random_index, random_value)
+
     def check_random_value(self) -> bool:
         random_key: InfoKey = random.choice(list(self.stored_data.keys()))
         return self.check_value(random_key)
@@ -104,7 +122,10 @@ class ChordSimulator:
             # Make some stabilization and try again
             node = self._get_successor(key.data_id)
             for i in range(constants.REPLICATION_FACTOR):
-                node.stabilize()
+                node.check_possible_successor()
+                node.update_successor_list()
+                for _ in range(self.id_bit_length):
+                    node.fix_finger()
                 node = self.nodes[node.get_next_node().node_id]
 
         if self.count_replicas(key) != constants.REPLICATION_FACTOR \
@@ -122,10 +143,15 @@ class ChordSimulator:
                   f"{self._get_successor(key.data_id).successor_list}")
             return False
 
-        values = self.get_all_values(key)
-        if values != self.stored_data[key]:
-            print(f"ERROR! Got {values}, but {self.stored_data[key]} expected")
-            return False
+        for node in self.get_nodes_replicating_key(key):
+            values = node.get_all_values(key)
+            if values != self.stored_data[key]:
+                print(f"ERROR! Got {values}, but {self.stored_data[key]} expected")
+                print(f"\nKey {key} replication:")
+                for replicating_node in self.get_nodes_replicating_key(key):
+                    print(f"Node {replicating_node.node_info.node_id} replica: "
+                          f"{replicating_node.replication_manager.get_data(key)}")
+                return False
 
         return True
 
@@ -144,7 +170,7 @@ class ChordSimulator:
 
         real_successor = self.request_sender.get_real_successor((target_id + 1) % self.module)
 
-        if successor != real_successor:
+        if successor.node_id != real_successor.node_id:
             print(f"Incorrect! Got id={successor.node_id}, but id={real_successor.node_id} expected")
             return False
 

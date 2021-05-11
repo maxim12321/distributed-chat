@@ -42,14 +42,26 @@ class Chat(Serializable):
         self.chat_name = data_dict["chat_name"]
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
-    def generate_invite_link(self, ip_address: bytes, user_port: int) -> str:
-        user_port = str(user_port)
-        user_port = user_port.encode("utf-8")
+    def load(self, chat_id: int, private_key: bytes, name_message: bytes) -> None:
+        self.chat_id = chat_id
+        self.private_key = private_key
+        self._load_name(name_message)
+
+    def _load_name(self, name_message: bytes) -> None:
+        chat_name: Container[str] = Container()
+
+        MessageParser.parser(name_message) \
+            .begin_encrypted(self.private_key) \
+            .append_string(chat_name) \
+            .encrypt() \
+            .parse()
+
+        self.chat_name = chat_name.get()
+
+    def generate_invite_link(self) -> str:
         link = MessageBuilder.builder() \
             .append_id(self.chat_id) \
             .append_bytes(self.private_key) \
-            .append_bytes(ip_address) \
-            .append_bytes(user_port) \
             .build()
         return constants.bytes_to_string(link)
 
@@ -60,6 +72,17 @@ class Chat(Serializable):
         message_type = Container[ChatMessageType]()
         message = MessageParser.parser(message) \
             .append_type(message_type) \
+            .parse()
+
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
+
+        message = MessageParser.parser(message) \
             .begin_encrypted(self.private_key) \
             .parse()
 
@@ -73,7 +96,9 @@ class Chat(Serializable):
 
         if message_type.get() == ChatMessageType.GET_CHAT:
             message = MessageBuilder.builder() \
+                .begin_encrypted() \
                 .append_serializable(self) \
+                .encrypt(self.private_key) \
                 .build()
             return message
 
@@ -95,6 +120,13 @@ class Chat(Serializable):
 
     def get_message_list(self) -> List[ChatMessage]:
         return self.message_handler.get_message_list()
+
+    def build_chat_name_message(self) -> bytes:
+        return MessageBuilder.builder() \
+            .begin_encrypted() \
+            .append_string(self.chat_name) \
+            .encrypt(self.private_key) \
+            .build()
 
     def build_send_text_message(self, text_message: ChatMessage) -> bytes:
         return MessageBuilder.builder() \

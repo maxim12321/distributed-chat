@@ -20,11 +20,6 @@ class TestNodeRequestSender(NodeRequestSender):
     def ping(self, node: NodeInfo) -> bool:
         return node.node_id in self.nodes.keys()
 
-    def notify_node(self, node: NodeInfo, possible_predecessor: NodeInfo) -> None:
-        if node.node_id not in self.nodes.keys():
-            return
-        self.nodes[node.node_id].update_previous_node(deepcopy(possible_predecessor))
-
     def request_successor(self, node: NodeInfo, target_id: int) -> Optional[NodeInfo]:
         if node.node_id not in self.nodes.keys():
             return None
@@ -50,15 +45,17 @@ class TestNodeRequestSender(NodeRequestSender):
             return None
         return deepcopy(self.nodes[node.node_id].get_successor_list())
 
-    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> None:
+    def propose_finger_update(self, node: NodeInfo, node_to_update: NodeInfo, finger_number: int) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
-            return
+            return None
         self.nodes[node.node_id].propose_finger_update(deepcopy(node_to_update), finger_number)
+        return b''
 
-    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> None:
+    def propose_predecessor(self, node: NodeInfo, node_to_propose: NodeInfo) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
-            return
+            return None
         self.nodes[node.node_id].update_previous_node(deepcopy(node_to_propose))
+        return b''
 
     def request_replication_info(self, node: NodeInfo) -> Optional[ReplicationInfo]:
         if node.node_id not in self.nodes.keys():
@@ -70,15 +67,52 @@ class TestNodeRequestSender(NodeRequestSender):
             return None
         return deepcopy(self.nodes[node.node_id].get_data_by_keys(deepcopy(keys)))
 
-    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> None:
+    def update_replication_info(self, node: NodeInfo, new_info: ReplicationInfo) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
-            return
+            return None
         self.nodes[node.node_id].update_replication_info(deepcopy(new_info))
+        return b''
 
-    def update_replication(self, node: NodeInfo, new_info: ReplicationInfo, new_data: ReplicationData) -> None:
+    def update_replication(self, node: NodeInfo,
+                           new_info: ReplicationInfo, new_data: ReplicationData) -> Optional[bytes]:
         if node.node_id not in self.nodes.keys():
-            return
+            return None
         self.nodes[node.node_id].update_replication(deepcopy(new_info), deepcopy(new_data))
+        return b''
+
+    def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        result = self.nodes[node.node_id].get_value(deepcopy(key))
+        return b'' if result is None else result
+
+    def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        return deepcopy(self.nodes[node.node_id].get_all_values(deepcopy(key)))
+
+    def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        self.nodes[node.node_id].set_value(deepcopy(key), deepcopy(value))
+        return b''
+
+    def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[int]:
+        if node.node_id not in self.nodes.keys():
+            return None
+        return self.nodes[node.node_id].append_value(deepcopy(key), value)
+
+    def append_replication(self, node: NodeInfo, key: InfoKey, value: bytes, current_index: int) -> bool:
+        if node.node_id not in self.nodes.keys():
+            return False
+        self.nodes[node.node_id].append_replication(deepcopy(key), value, current_index)
+        return True
+
+    def edit_value(self, node: NodeInfo, key: InfoKey, index: int, new_value: bytes) -> bool:
+        if node.node_id not in self.nodes.keys():
+            return False
+        self.nodes[node.node_id].edit_value(deepcopy(key), index, new_value)
+        return True
 
     # Returns node, such that node.id >= target_id, used just for validating result in simulator
     def get_real_successor(self, target_id) -> NodeInfo:
