@@ -1,73 +1,68 @@
-import random
-import socket
+from src.chat import Chat
+from src.user import User
 
-from src.dht.chord_node import ChordNode
-from src.dht.chord_node_request_sender import ChordNodeRequestSender
-from src.dht.node_info import NodeInfo
-from src.replication.info_key import InfoKey
-from src.senders.socket_message_sender import SocketMessageSender
+
+def print_chat(chat: Chat) -> None:
+    print(f"Chat '{user.get_chat_info(chat_id).chat_name}' (id={chat.chat_id}):")
+    print("\tUsers:")
+    for user_info in chat.get_user_id_list():
+        print(f"\t\t{user_info.user_id}")
+    print("\tMessages:")
+    for message in chat.get_message_list():
+        print(f"\t\t{message.sender_id}, {message.context}")
+
 
 if __name__ == "__main__":
-    id_bit_length = 10
-    module = 2 ** id_bit_length
-
-    node_id = random.randrange(0, module)
-    print(f"Welcome! Your id is {node_id}\n")
-
-    print(f"Please, enter port: ", end="")
-    ip = socket.inet_pton(socket.AF_INET, "127.0.0.1")
-    port = int(input())
-
-    request_sender = ChordNodeRequestSender()
-    message_sender = SocketMessageSender(ip, port,
-                                         None,
-                                         request_sender.handle_request,
-                                         None)
-    request_sender.set_message_sender(message_sender)
-
-    node = ChordNode(id_bit_length, node_id, ip, port, request_sender)
-    request_sender.set_current_node(node)
-
-    print("Enter some other node's id (or -1 if you're first): ", end="")
-    other_id = int(input())
-
-    if other_id == -1:
-        node.join(None)
-    else:
-        print("And we need one more thing. Please, enter that node's port: ", end="")
-        other_port = int(input())
-        node.join(NodeInfo(other_id, ip, other_port))
-
-    print("\nYou've joined successfully!\n")
+    username = input("Input your username: ")
+    user = User(username)
+    print(f"Welcome, {username}")
+    print(f"You can invite users with link: {user.get_network_invite_link()}\n")
 
     while True:
-        print("Enter command (send, check): ", end="")
-        command = input()
+        print("=========================")
+        print("0 -- Join by invite link")
+        print("1 -- Create chat")
+        print("2 -- Print chat_list")
+        print("3 -- Get invite_link")
+        print("4 -- Join by invite_link")
+        print("5 -- Send message")
+        print("=========================")
+        fin = input("Type command: ")
 
-        if command == "send":
-            print(f"Enter key for message (from 0 to {module - 1}): ", end="")
-            key = int(input())
+        if fin == "0":
+            network_invite_link = input("Write network_invite_link (or -1): ")
+            user.join_network_by_invite_link(None if network_invite_link == "-1" else network_invite_link)
 
-            print("Enter message you want to send: ", end="")
-            message_bytes = input().encode("utf-8")
+        if fin == "1":
+            name = input("You wanted to create chat. Please write name of this chat: ")
+            user.create_chat(name)
+            print("You created chat with the name:", name)
 
-            node.append_value_by_key(InfoKey(1, key), message_bytes)
+        if fin == "2":
+            chat_id_list = user.get_chat_id_list()
+            print("Your chat list is:")
+            for chat_id in chat_id_list:
+                print_chat(user.get_chat_info(chat_id))
 
-            print("Message was sent!\n")
-        elif command == "check":
-            print(f"Enter key for messages (from 0 to {module - 1}): ", end="")
-            key = int(input())
+        if fin == "3":
+            chat_id = input("Write chat_id to create link: ")
+            link = user.get_invite_link(int(chat_id))
+            print("Copy this link to add users in this chat:")
+            print(link)
 
-            values = node.get_all_data_by_key(InfoKey(1, key))
-            print("\nMessages:")
-            if values is None:
-                print("Empty :(")
-            else:
-                for value in values:
-                    print(value.decode("utf-8"))
-            print()
-        elif command == "debug":
-            print(f"My id: {node_id}")
-            print(f"Successor id: {node.successor.node_id}")
-            print(f"Predecessor id: {node.predecessor.node_id}")
-            print(f"Replication info:\n{node.get_replication_info()}\n")
+        if fin == "4":
+            link = input("Insert link to join chat: ")
+            user.join_chat_by_link(link)
+            print("Done. Check your chats now")
+
+        if fin == "5":
+            chat_id = input("Write chat_id: ")
+            text = input("Write text: ")
+            user.send_text_message(int(chat_id), text)
+
+        if fin == "debug":
+            print(f"My id: {user.user_id}")
+            print(f"Successor id: {user.hash_table.node.successor.node_id}")
+            print(f"Predecessor id: {user.hash_table.node.predecessor.node_id}")
+            print(f"Replication info:\n{user.hash_table.node.get_replication_info()}\n")
+            print(f"Replication data:\n{user.hash_table.node.replication_manager.data}\n")

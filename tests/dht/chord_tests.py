@@ -1,6 +1,7 @@
 import unittest
 
 from src import constants
+from src.replication.info_key import InfoKey
 from tests.dht.chord_simulator import ChordSimulator
 
 
@@ -33,7 +34,7 @@ class ChordTests(unittest.TestCase):
             self.simulator.add_random_node()
 
         for _ in range(100):
-            key = self.simulator.set_random_value()
+            key = self.simulator.append_random_value()
 
             for _ in range(50):
                 self.simulator.append_value(key, b'42')
@@ -46,7 +47,7 @@ class ChordTests(unittest.TestCase):
         for _ in range(100):
             self.simulator.add_random_node()
 
-            key = self.simulator.set_random_value()
+            key = self.simulator.append_random_value()
             for _ in range(50):
                 self.simulator.append_value(key, b'42')
 
@@ -60,7 +61,9 @@ class ChordTests(unittest.TestCase):
 
         for _ in range(1000):
             key = self.simulator.append_random_value()
-            self.assertTrue(self.simulator.check_value(key))
+            for _ in range(10):
+                self.simulator.append_value(key, b'42')
+                self.assertTrue(self.simulator.check_value(key))
 
         for _ in range(1000):
             self.assertTrue(self.simulator.check_random_value())
@@ -78,9 +81,12 @@ class ChordTests(unittest.TestCase):
                 self.assertTrue(self.simulator.check_random_value())
 
             for _ in range(30):
-                key = self.simulator.set_random_value()
-                self.simulator.set_value(key, b'42')
-                self.assertTrue((self.simulator.check_value(key)))
+                key = self.simulator.append_random_value()
+                self.assertTrue(self.simulator.check_value(key))
+                for _ in range(10):
+                    self.assertTrue(self.simulator.check_value(key))
+                    self.simulator.append_value(key, b'42')
+                    self.assertTrue(self.simulator.check_value(key))
 
             for _ in range(20):
                 self.assertTrue(self.simulator.check_random_value())
@@ -102,7 +108,9 @@ class ChordTests(unittest.TestCase):
             keys.append(self.simulator.set_random_value())
 
         for _ in range(100):
-            self.simulator.append_random_value()
+            key = self.simulator.append_random_value()
+            for _ in range(5):
+                self.simulator.append_value(key, b'42')
 
         for _ in range(100 - constants.REPLICATION_FACTOR):
             for key in keys:
