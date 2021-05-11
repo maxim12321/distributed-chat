@@ -16,10 +16,10 @@ const Dialogs = ({ items, onSearch, inputValue, onSelectDialog }) => (
     </div>
     {(items.length) ? (items.map(item => (
       <DialogItem
-        onSelect={onSelectDialog}
+        _id={item._id}
         user={item.user}
         message={item.message}
-        {...item}
+        onSelect={onSelectDialog}
       />
     ))) : (
       <div className="dialogs-empty">

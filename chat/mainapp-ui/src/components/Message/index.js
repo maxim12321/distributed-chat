@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import classNames from "classnames";
 
 import "./Message.scss";
+import { Avatar } from "../"
 
 const Message = ({ avatar, user, text, date, isMe, attachments }) => (
   <div className={classNames('message', {
@@ -12,7 +13,7 @@ const Message = ({ avatar, user, text, date, isMe, attachments }) => (
   >
     <div className="message__content">
       <div className="message__avatar">
-        <img src={user.avatar} alt={`Avatar ${user.fullname}`} />
+        <Avatar user={user}/>
       </div>
       <div className="message__info">
         {text &&

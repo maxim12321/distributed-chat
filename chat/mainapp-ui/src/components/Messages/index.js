@@ -6,6 +6,7 @@ import "./Messages.scss";
 import { Message } from "../"
 
 const Messages = ({ items })  => (
+
   <div className="messages">
      {(items) ? (
        <div>

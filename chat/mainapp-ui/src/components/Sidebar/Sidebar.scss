@@ -1,0 +1,22 @@
+.chat__sidebar-modal {
+  color: #202020;
+  width: 1400px;
+
+}
+
+.chat__sidebar-modal-input{
+  width: 400px;
+  font-size: 16px;
+}
+
+.ant-btn {
+  background-color: #457b9d;
+  color: #fff;
+  &:hover {
+  background-color: #1d3557;
+  }
+}
+
+.ant-modal {
+ background-color: #1d3557;
+}

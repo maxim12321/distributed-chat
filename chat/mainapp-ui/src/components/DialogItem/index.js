@@ -3,7 +3,8 @@ import React from "react";
 import "./DialogItem.scss";
 import { Avatar } from "../"
 
-const DialogItem = ({ _id, user, message, onSelect }) => (
+const DialogItem = ({ _id, user, message, onSelect }) => {
+ return(
   <div className="border">
     <div className="dialogs__item"
       onClick={onSelect.bind(this, _id)}
@@ -25,5 +26,5 @@ const DialogItem = ({ _id, user, message, onSelect }) => (
     </div>
   </div>
 );
-
+};
 export default DialogItem;

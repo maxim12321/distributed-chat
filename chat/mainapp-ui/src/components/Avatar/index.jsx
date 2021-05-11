@@ -17,7 +17,7 @@ const Avatar = ({ user }) => {
     return (
       <div
         style={{
-          background: `linear-gradient(#338EFF, #6B9FE1)`
+          background: `linear-gradient(#a8dadc, #457b9d)`
         }}
         className="avatar avatar--symbol"
       >

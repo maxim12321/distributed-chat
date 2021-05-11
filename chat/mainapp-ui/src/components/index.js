@@ -6,3 +6,4 @@ export { default as DialogItem } from "./DialogItem";
 export { default as Dialogs } from "./Dialogs";
 export { default as Avatar } from "./Avatar";
 export { default as ChatInput } from "./ChatInput";
+export { default as Sidebar } from "./Sidebar";

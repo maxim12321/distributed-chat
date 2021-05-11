@@ -5,6 +5,9 @@ const actions = {
     type: "MESSAGES:SET_ITEMS",
     payload: items
   }),
+  fetchSendMessage: text => dispatch => {
+    messagesApi.send(text);
+  },
   fetchMessages : dialogId => dispatch => {
     messagesApi
       .getAllByDialogId(dialogId)
