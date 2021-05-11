@@ -1,52 +1,149 @@
-from message_handler import MessageHandler
-from chat_message_type import ChatMessageType
 import os
-import base64
-import constants
+from dataclasses import dataclass
+from typing import Any, Generator, List, Optional
+
+from src import constants
+from src.byte_message_type import ByteMessageType
+from src.chat_message_type import ChatMessageType
+from src.message_builders.message_builder import MessageBuilder
+from src.message_handler import MessageHandler
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
+from src.chat_message import ChatMessage
+from src.serializable import Serializable
+from src.user_info import UserInfo
 
 
-class Chat:
-    def __init__(self, creator_id: bytes, chat_name: str):
+@dataclass
+class Chat(Serializable):
+
+    def __init__(self):
         self.message_handler = MessageHandler()
-        self.message_handler.handle_introduce_user(creator_id)
-        self.private_key = None
-        self.chat_name = chat_name
-        self.chat_id = os.urandom(16)
+        self.private_key: Optional[bytes] = None
+        self.chat_name: Optional[str] = None
+        self.chat_id: Optional[int] = None
 
-    def generate_private_key(self) -> None:
+    def __iter__(self) -> Generator[str, Any, None]:
+        yield from {
+            "chat_id": self.chat_id,
+            "chat_name": self.chat_name,
+            "private_key": constants.bytes_to_dict(self.private_key),
+            "message_handler": dict(self.message_handler)
+        }.items()
+
+    def create(self, chat_name: str) -> None:
+        self.chat_id = constants.random_int(constants.ID_LENGTH)
         self.private_key = os.urandom(constants.PRIVATE_KEY_LENGTH)
+        self.chat_name = chat_name
 
-    def generate_invite_link(self, ip_address: bytes) -> str:
-        link_bytes = base64.b64encode(self.private_key + ip_address)
-        return link_bytes.decode("utf-8")
+    def load_from_dict(self, data_dict: dict) -> None:
+        self.chat_id = data_dict["chat_id"]
+        self.private_key = data_dict["private_key"]
+        self.chat_name = data_dict["chat_name"]
+        self.message_handler.load_from_dict(data_dict["message_handler"])
 
-    def parse_invite_link(self, link: str) -> None:
-        link_bytes = base64.b64decode(link)
-        self.private_key = link_bytes[:constants.PRIVATE_KEY_LENGTH]
+    def load(self, chat_id: int, private_key: bytes, name_message: bytes) -> None:
+        self.chat_id = chat_id
+        self.private_key = private_key
+        self._load_name(name_message)
 
-    def handle_message(self, message: bytes) -> bytes:
-        message_type = ChatMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
-        message_content = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
-        if message_type == ChatMessageType.TEXT_MESSAGE:
-            self.message_handler.handle_text_message(message_content)
-            return bytearray()
+    def _load_name(self, name_message: bytes) -> None:
+        chat_name: Container[str] = Container()
 
-        if message_type == ChatMessageType.INTRODUCE_USER:
-            self.message_handler.handle_introduce_user(message_content)
-            user_id_list_bytes = self.get_user_list_message()
-            return user_id_list_bytes
+        MessageParser.parser(name_message) \
+            .begin_encrypted(self.private_key) \
+            .append_string(chat_name) \
+            .encrypt() \
+            .parse()
 
-        if message_type == ChatMessageType.USER_LIST:
-            self.message_handler.handle_user_list(message_content)
-            return bytearray()
+        self.chat_name = chat_name.get()
 
-    def get_user_list_message(self) -> bytes:
-        user_id_list = self.message_handler.get_user_id_list()
-        user_id_list_bytes = bytearray().join(user_id_list)
-        return constants.message_type_to_bytes(ChatMessageType.USER_LIST) + user_id_list_bytes
+    def generate_invite_link(self) -> str:
+        link = MessageBuilder.builder() \
+            .append_id(self.chat_id) \
+            .append_bytes(self.private_key) \
+            .build()
+        return constants.bytes_to_string(link)
 
-    def get_introduce_user_message(self, user_id: bytes) -> bytes:
-        return constants.message_type_to_bytes(ChatMessageType.INTRODUCE_USER) + user_id
+    def save_images(self, image_paths: List[str]) -> List[bytes]:
+        return self.message_handler.image_manager.save_images(image_paths)
 
-    def get_chat_id(self) -> bytes:
+    def handle_message(self, message: bytes) -> Optional[bytes]:
+        message_type = Container[ChatMessageType]()
+        message = MessageParser.parser(message) \
+            .append_type(message_type) \
+            .parse()
+
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
+
+        message = MessageParser.parser(message) \
+            .begin_encrypted(self.private_key) \
+            .parse()
+
+        if message_type.get() == ChatMessageType.TEXT_MESSAGE:
+            self.message_handler.handle_text_message(message)
+            return None
+
+        if message_type.get() == ChatMessageType.INTRODUCE_USER:
+            self.message_handler.handle_introduce_user(message)
+            return None
+
+        if message_type.get() == ChatMessageType.GET_CHAT:
+            message = MessageBuilder.builder() \
+                .begin_encrypted() \
+                .append_serializable(self) \
+                .encrypt(self.private_key) \
+                .build()
+            return message
+
+        if message_type.get() == ChatMessageType.IMAGE_MESSAGE:
+            self.message_handler.handle_image_message(message)
+            return None
+
+        if message_type.get() == ChatMessageType.IMAGE_REQUEST:
+            return self.message_handler.handle_image_request(message)
+
+    def get_chat_id(self) -> int:
         return self.chat_id
+
+    def get_chat_name(self) -> str:
+        return self.chat_name
+
+    def get_user_id_list(self) -> List[UserInfo]:
+        return self.message_handler.get_user_id_list()
+
+    def get_message_list(self) -> List[ChatMessage]:
+        return self.message_handler.get_message_list()
+
+    def build_chat_name_message(self) -> bytes:
+        return MessageBuilder.builder() \
+            .begin_encrypted() \
+            .append_string(self.chat_name) \
+            .encrypt(self.private_key) \
+            .build()
+
+    def build_send_text_message(self, text_message: ChatMessage) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.TEXT_MESSAGE) \
+            .begin_encrypted() \
+            .append_serializable(text_message) \
+            .encrypt(self.private_key) \
+            .build()
+
+    def build_introduce_message(self, user_info: UserInfo) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.INTRODUCE_USER) \
+            .begin_encrypted() \
+            .append_serializable(user_info) \
+            .encrypt(self.private_key) \
+            .build()

@@ -1,24 +1,25 @@
-from chat_message_type import ChatMessageType
-from byte_message_type import ByteMessageType
-import constants
+from typing import Callable, Dict, List, Optional
+
+from src.byte_message_type import ByteMessageType
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
 
 
 class MessageRedirection:
+
     def __init__(self):
-        self.handlers = dict((type, []) for type in ChatMessageType)
+        self.handlers: Dict[ByteMessageType, List[Callable[[bytes], Optional[bytes]]]] \
+            = dict((byte_message_type, []) for byte_message_type in ByteMessageType)
 
-    def subscribe(self, type: ChatMessageType, handler: callable) -> None:
-        self.handlers[type].append(handler)
+    def subscribe(self, byte_message_type: ByteMessageType, handler: Callable[[bytes], Optional[bytes]]) -> None:
+        self.handlers[byte_message_type].append(handler)
 
-    def handle(self, address: (str, int), message: bytes) -> None:
-        type = ByteMessageType(constants.to_int(message[:constants.MESSAGE_TYPE_BYTE_SIZE]))
-        message = message[constants.MESSAGE_TYPE_BYTE_SIZE:]
-        try:
-            for handler in self.handlers[type]:
-                try:
-                    handler(address, message)
-                except TypeError:
-                    print(f"Function {handler.__name__} has wrong arguments")
-        except KeyError:
-            print(f"Wrong ByteMessageType. Got {type}")
-            return
+    def handle(self, message: bytes) -> Optional[bytes]:
+        byte_message_type: Container[ByteMessageType] = Container()
+
+        message = MessageParser.parser(message) \
+            .append_type(byte_message_type) \
+            .parse()
+
+        for handler in self.handlers[byte_message_type.get()]:
+            return handler(message)

@@ -1,11 +1,11 @@
 .idea
 src/main.py
+**__pycache__**
 
 # Django #
 *.log
 *.pot
 *.pyc
-*__pycache__*
 db.sqlite3
 media
 

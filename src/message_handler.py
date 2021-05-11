@@ -1,24 +1,72 @@
-from text_message import TextMessage
-import constants
+from src.message_builders.message_builder import MessageBuilder
+from src.chat_message_type import ChatMessageType
+from src.message_parsers.container import Container
+from src.image_manager import ImageManager
+from typing import List
+
+from src.message_parsers.message_parser import MessageParser
+from src.serializable import Serializable
+from src.chat_message import ChatMessage
+from src.user_info import UserInfo
 
 
-class MessageHandler:
+class MessageHandler(Serializable):
+
     def __init__(self):
-        self.user_id_list = []
-        self.message_list = []
+        self.users: List[UserInfo] = []
+        self.messages: List[ChatMessage] = []
+        self.image_manager = ImageManager()
+
+    def __iter__(self):
+        yield from {
+            "user_info_list": [dict(user_info) for user_info in self.users],
+            "message_list": [dict(messages) for messages in self.messages],
+        }.items()
+
+    def load_from_dict(self, data: dict) -> None:
+        self.messages.clear()
+        self.users.clear()
+        for message in data["message_list"]:
+            self.messages.append(ChatMessage.from_dict(message))
+        for user_info in data["user_info_list"]:
+            self.users.append(UserInfo.from_dict(user_info))
 
     def handle_text_message(self, message: bytes) -> None:
-        sender_id = message[:constants.ID_LENGTH]
-        text_message = message[constants.ID_LENGTH:]
-        self.message_list.append(TextMessage(sender_id, text_message))
+        text_message = ChatMessage()
+        MessageParser.parser(message) \
+            .append_serializable(text_message) \
+            .parse()
+        self.messages.append(text_message)
 
-    def handle_introduce_user(self, id: bytes) -> None:
-        self.user_id_list.append(id)
+    def handle_introduce_user(self, message_id: bytes) -> None:
+        user_info = UserInfo()
+        MessageParser.parser(message_id) \
+            .append_serializable(user_info) \
+            .parse()
+        self.users.append(user_info)
 
-    def handle_user_list(self, message: bytes) -> None:
-        self.user_id_list.clear()
-        for current_byte in range(0, len(message), constants.ID_LENGTH):
-            self.user_id_list.append(message[current_byte:current_byte + constants.ID_LENGTH])
+    def handle_image_message(self, message: bytes) -> None:
+        sender_id = Container[int]()
+        image_hashes = MessageParser.parser(message) \
+            .append_id(sender_id) \
+            .parse()
+        self.messages.append(ChatMessage(ChatMessageType.IMAGE_MESSAGE, sender_id.get(), image_hashes))
 
-    def get_user_id_list(self):
-        return self.user_id_list
+    def handle_image_request(self, message: bytes) -> bytes:
+        sender_id = Container[int]()
+        context = Container[List[str]]()
+        MessageParser.parser(message) \
+            .append_id(sender_id) \
+            .append_object(context) \
+            .parse()
+
+        images = self.image_manager.get_images(context.get())
+        return MessageBuilder.builder() \
+            .append_bytes_list(images) \
+            .build()
+
+    def get_user_id_list(self) -> List[UserInfo]:
+        return self.users
+
+    def get_message_list(self) -> List[ChatMessage]:
+        return self.messages
