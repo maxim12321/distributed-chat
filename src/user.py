@@ -4,23 +4,26 @@ import socket
 from src import constants
 from src.byte_message_type import ByteMessageType
 from src.chat import Chat
+from src.chat_info import ChatInfo
 from src.chat_manager import ChatManager
+from src.chat_message import ChatMessage
 from src.chat_message_type import ChatMessageType
 from src.dht.hash_table import HashTable
 from src.message_builders.message_builder import MessageBuilder
 from src.message_redirection import MessageRedirection
+from src.preferences import Preferences
 from src.senders.socket_message_sender import SocketMessageSender
-from src.chat_message import ChatMessage
 from src.user_info import UserInfo
 
 
 class User:
 
-    def __init__(self, username: str):
+    def __init__(self, username: Optional[str] = None):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
 
+        self.preferences = Preferences()
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
@@ -36,7 +39,7 @@ class User:
     def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
 
-    def create_chat(self, chat_name: str) -> None:
+    def create_chat(self, chat_name: str) -> int:
         chat = self.chat_manager.create_chat(chat_name)
         self.hash_table.set_value(ChatMessageType.SET_CHAT_NAME, chat.chat_id,
                                   chat.build_chat_name_message())
@@ -44,6 +47,7 @@ class User:
 
         introduce_message = chat.build_introduce_message(UserInfo(self.user_id, self.ip, self.port))
         self._broadcast_message(chat.chat_id, introduce_message)
+        return chat.chat_id
 
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id)
@@ -65,7 +69,7 @@ class User:
     def _broadcast_message(self, chat_id: int, message: bytes) -> None:
         self.hash_table.append_value(ChatMessageType.TEXT_MESSAGE, chat_id, message)
 
-    def join_chat_by_link(self, invite_link: str) -> None:
+    def join_chat_by_link(self, invite_link: str) -> int:
         chat_id, private_key = self.chat_manager.parse_invite_link(invite_link)
 
         chat = Chat()
@@ -81,6 +85,7 @@ class User:
 
         message = self.chat_manager.build_introduce_message(chat_id, UserInfo(self.user_id, self.ip, self.port))
         self._broadcast_message(chat_id, message)
+        return chat_id
 
     def _add_chat(self, chat: Chat) -> None:
         self.chat_manager.add_chat(chat)
@@ -88,8 +93,9 @@ class User:
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
-        chat_message = ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id, data)
-        message = self.chat_manager.build_send_text_message(chat_id, chat_message)
+        message = self.chat_manager.build_send_text_message(chat_id,
+                                                            ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id,
+                                                                        data))
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:
@@ -104,7 +110,9 @@ class User:
     def get_message_list(self, chat_id: int) -> List[ChatMessage]:
         return self.chat_manager.get_message_list(chat_id)
 
-    def get_username(self) -> str:
+    def get_username(self) -> Optional[str]:
+        username = self.preferences.load_primitive_type("username")
+        self.username = username
         return self.username
 
     def get_ip(self) -> bytes:
@@ -112,6 +120,13 @@ class User:
 
     def get_id(self) -> int:
         return self.user_id
+
+    def set_username(self, username: str) -> None:
+        self.username = username
+        self.preferences.save_object("username", username)
+
+    def find_username(self, user_id: int) -> str:
+        return "TO DO"
 
     def __del__(self):
         self.socket_message_sender.__del__()

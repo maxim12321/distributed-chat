@@ -1,14 +1,15 @@
 from typing import Optional, Callable, Dict, Any
-from serializable import Serializable
-import constants
-import json_decoder
 import copy
 import json
+
+from src.serializable import Serializable
+import src.constants as constants
+import src.json_decoder as json_decoder
 
 
 class Preferences:
     def __init__(self):
-        self.FILE_NAME = "../preferences.json"
+        self.FILE_NAME = "preferences.json"
 
     def _load_json_file(self, object_hook: Optional[Callable[[Dict[Any, Any]], Any]] = None) -> dict:
         try:
@@ -34,28 +35,36 @@ class Preferences:
         serialized_object = object_to_save
         if isinstance(object_to_save, bytes):
             serialized_object = constants.bytes_to_string(object_to_save)
-        if not self._is_primitive(object_to_save):
+        elif not self._is_primitive(object_to_save):
             serialized_object = dict(object_to_save)
         return serialized_object
 
-    def load_primitive_type(self, tag: str) -> object:
+    def load_primitive_type(self, tag: str) -> Optional[object]:
         dict_data = self._load_json_file()
-        return dict_data[tag]
+        if tag in dict_data.keys():
+            return dict_data[tag]
+        else:
+            return None
 
     def load_object(self, tag: str, load_object: Serializable) -> None:
         dict_data = self._load_json_file(json_decoder.decode)
+        if tag not in dict_data.keys():
+            return
         load_object.load_from_dict(dict_data[tag])
 
     def load_array_of_objects(self, array_tag: str, load_object: Serializable) -> list:
         dict_data = self._load_json_file(json_decoder.decode)
         list_data = list()
+        if array_tag not in dict_data.keys():
+            return []
+
         for list_value in dict_data[array_tag]:
             load_object.load_from_dict(list_value)
             element = copy.deepcopy(load_object)
             list_data.append(element)
         return list_data
 
-    def save_object_to_array(self, array_tag: str, object_tag: str,  object_to_save: object) -> None:
+    def save_object_to_array(self, array_tag: str, object_tag: str, object_to_save: object) -> None:
         data_dict = self._load_json_file()
         serialized_object = self._get_serialized_object(object_to_save)
         if array_tag not in data_dict.keys():
