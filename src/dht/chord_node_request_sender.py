@@ -2,6 +2,8 @@ from enum import IntEnum
 from typing import List, Optional, Callable, Dict, Tuple
 
 from src import constants
+from src.byte_message_type import ByteMessageType
+from src.chat_message_type import ChatMessageType
 from src.dht.chord_node import ChordNode
 from src.dht.node_info import NodeInfo
 from src.dht.node_request_sender import NodeRequestSender
@@ -11,6 +13,7 @@ from src.message_parsers.message_parser import MessageParser
 from src.replication.info_key import InfoKey
 from src.replication.replication_data import ReplicationData
 from src.replication.replication_info import ReplicationInfo
+from src.senders.long_polling_requests import LongPollingRequests
 from src.senders.message_sender import MessageSender
 
 
@@ -36,7 +39,9 @@ class ChordRequestType(IntEnum):
 
 
 class ChordNodeRequestSender(NodeRequestSender):
-    def __init__(self) -> None:
+    def __init__(self, long_polling: LongPollingRequests) -> None:
+        self.long_polling = long_polling
+
         self.message_sender: Optional[MessageSender] = None
 
         self.node: Optional[ChordNode] = None
@@ -70,6 +75,13 @@ class ChordNodeRequestSender(NodeRequestSender):
         self.node = node
         self.node_id = node.node_info.node_id
 
+    def send_request(self, node: NodeInfo, request: bytes) -> Optional[bytes]:
+        request = MessageBuilder.builder() \
+            .append_type(ByteMessageType.DHT_MESSAGE) \
+            .build() + request
+
+        return self.message_sender.send_request(node.node_ip, node.node_port, request)
+
     def handle_request(self, request: bytes) -> bytes:
         request_type: Container[ChordRequestType] = Container()
 
@@ -87,7 +99,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_type(ChordRequestType.PING) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return False
 
@@ -111,7 +123,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_id(target_id) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -180,7 +192,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_type(ChordRequestType.REQUEST_SUCCESSOR_LIST) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -206,7 +218,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_type(ChordRequestType.REQUEST_REPLICATION_INFO) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -232,7 +244,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_object(list(map(str, info_keys))) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -267,7 +279,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_object(finger_number) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.send_request(node, message)
 
     def propose_finger_update_receive(self, data: bytes) -> bytes:
         node_to_update: NodeInfo = NodeInfo()
@@ -291,7 +303,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_serializable(node_to_propose) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.send_request(node, message)
 
     def propose_predecessor_receive(self, data: bytes) -> bytes:
         node_to_propose: NodeInfo = NodeInfo()
@@ -313,7 +325,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_serializable(new_info) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.send_request(node, message)
 
     def update_replication_info_receive(self, data: bytes) -> bytes:
         new_info: ReplicationInfo = ReplicationInfo()
@@ -337,7 +349,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_serializable(new_data) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.send_request(node, message)
 
     def update_replication_receive(self, data: bytes) -> bytes:
         new_info: ReplicationInfo = ReplicationInfo()
@@ -353,14 +365,17 @@ class ChordNodeRequestSender(NodeRequestSender):
 
     def get_value(self, node: NodeInfo, key: InfoKey) -> Optional[bytes]:
         if node.node_id == self.node_id:
-            return self.node.get_value(key)
+            value = self.node.get_value(key)
+            return b'' if value is None else value
 
         request = MessageBuilder.builder() \
             .append_type(ChordRequestType.GET_VALUE) \
             .append_string(str(key)) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        print(f"Requesting value {ChatMessageType(key.data_type).name}")
+        answer: Optional[bytes] = self.send_request(node, request)
+        print(f"Got response {answer}")
         if answer is None:
             return None
 
@@ -381,6 +396,7 @@ class ChordNodeRequestSender(NodeRequestSender):
         answer: Optional[bytes] = self.node.get_value(info_key)
         if answer is None:
             answer = b''
+        print(f"Returning value {answer}")
 
         return MessageBuilder.builder() \
             .append_bytes(answer) \
@@ -388,14 +404,15 @@ class ChordNodeRequestSender(NodeRequestSender):
 
     def get_all_values(self, node: NodeInfo, key: InfoKey) -> Optional[List[bytes]]:
         if node.node_id == self.node_id:
-            return self.node.get_all_values(key)
+            result = self.node.get_all_values(key)
+            return [] if result is None else result
 
         request = MessageBuilder.builder() \
             .append_type(ChordRequestType.GET_ALL_VALUES) \
             .append_string(str(key)) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -416,7 +433,9 @@ class ChordNodeRequestSender(NodeRequestSender):
         answer: Optional[List[bytes]] = self.node.get_all_values(info_key)
         if answer is None:
             answer = []
+        print(f"Answer is {answer}")
         answer: List[dict] = [constants.bytes_to_dict(value) for value in answer]
+        print(f"Answer after converting is {answer}")
 
         return MessageBuilder.builder() \
             .append_object(answer) \
@@ -425,6 +444,7 @@ class ChordNodeRequestSender(NodeRequestSender):
     def set_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[bytes]:
         if node.node_id == self.node_id:
             self.node.set_value(key, value)
+            self._send_long_polling_answer(key, value)
             return b''
 
         return self._make_info_key_value_request(node, key, value, ChordRequestType.SET_VALUE)
@@ -432,11 +452,13 @@ class ChordNodeRequestSender(NodeRequestSender):
     def set_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)
 
+        self._send_long_polling_answer(info_key, value)
         self.node.set_value(info_key, value)
         return b''
 
     def append_value(self, node: NodeInfo, key: InfoKey, value: bytes) -> Optional[int]:
         if node.node_id == self.node_id:
+            self._send_long_polling_answer(key, value)
             return self.node.append_value(key, value)
 
         index_bytes = self._make_info_key_value_request(node, key, value, ChordRequestType.APPEND_VALUE)
@@ -445,6 +467,7 @@ class ChordNodeRequestSender(NodeRequestSender):
     def append_value_receive(self, data: bytes) -> bytes:
         info_key, value = self._receive_info_key_value(data)
 
+        self._send_long_polling_answer(info_key, value)
         return constants.int_to_bytes(self.node.append_value(info_key, value))
 
     def append_replication(self, node: NodeInfo, key: InfoKey, value: bytes, current_index: int) -> bool:
@@ -459,7 +482,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_bytes(value) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message) is not None
+        return self.send_request(node, message) is not None
 
     def append_replication_receive(self, data: bytes) -> bytes:
         info_key, current_index, value = self._receive_key_value_index(data)
@@ -479,8 +502,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_bytes(new_value) \
             .build()
 
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
-        return answer is not None
+        return self.send_request(node, request) is not None
 
     def edit_value_receive(self, data: bytes) -> bytes:
         info_key, index, new_value = self._receive_key_value_index(data)
@@ -489,7 +511,7 @@ class ChordNodeRequestSender(NodeRequestSender):
         return b''
 
     def _make_node_info_request(self, node: NodeInfo, request: bytes) -> Optional[NodeInfo]:
-        answer: Optional[bytes] = self.message_sender.send_request(node.node_ip, node.node_port, request)
+        answer: Optional[bytes] = self.send_request(node, request)
         if answer is None:
             return None
 
@@ -507,7 +529,7 @@ class ChordNodeRequestSender(NodeRequestSender):
             .append_bytes(value) \
             .build()
 
-        return self.message_sender.send_request(node.node_ip, node.node_port, message)
+        return self.send_request(node, message)
 
     @staticmethod
     def _receive_info_key_value(data: bytes) -> Tuple[InfoKey, bytes]:
@@ -548,3 +570,8 @@ class ChordNodeRequestSender(NodeRequestSender):
         return MessageBuilder.builder() \
             .append_serializable(answer) \
             .build()
+
+    def _send_long_polling_answer(self, info_key: InfoKey, value: bytes) -> None:
+        long_polling_request = self.long_polling.build_long_polling_request(info_key.data_id,
+                                                                            ChatMessageType(info_key.data_type))
+        self.long_polling.send_answer(long_polling_request, value)

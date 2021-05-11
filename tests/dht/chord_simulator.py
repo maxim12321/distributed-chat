@@ -35,6 +35,9 @@ class ChordSimulator:
         node_id = random.choice(list(self.nodes.keys()))
         self.nodes.pop(node_id)
 
+        self.remove_node(node_id)
+
+    def remove_node(self, node_id: int) -> None:
         self.request_sender.remove_node(node_id)
 
     def set_value(self, key: InfoKey, value: bytes) -> None:

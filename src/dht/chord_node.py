@@ -136,7 +136,7 @@ class ChordNode:
         if index is None or index != current_index:
             return 0
 
-        data_index = self.replication_manager.append_data(self.node_info.node_id, key, value, current_index=index)
+        data_index = self.replication_manager.append_data(key, value)
         if index == 1:
             return 0
 

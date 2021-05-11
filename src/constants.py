@@ -3,7 +3,7 @@ from enum import IntEnum
 import os
 
 PRIVATE_KEY_LENGTH: int = 16
-ID_LENGTH: int = 16
+ID_LENGTH: int = 2
 
 BYTE_ORDER: str = "big"
 TYPE_BYTE_SIZE: int = 1
