@@ -38,8 +38,8 @@ class Chat(Serializable):
 
     def load_from_dict(self, data_dict: dict) -> None:
         self.chat_id = data_dict["chat_id"]
-        self.private_key = data_dict["private_key"]
         self.chat_name = data_dict["chat_name"]
+        self.private_key = data_dict["private_key"]
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def load(self, chat_id: int, private_key: bytes, name_message: bytes) -> None:

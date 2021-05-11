@@ -4,7 +4,6 @@ import socket
 from src import constants
 from src.byte_message_type import ByteMessageType
 from src.chat import Chat
-from src.chat_info import ChatInfo
 from src.chat_manager import ChatManager
 from src.chat_message import ChatMessage
 from src.chat_message_type import ChatMessageType
@@ -27,6 +26,8 @@ class User:
         self.user_id = constants.random_int(constants.ID_LENGTH)
         self.username = username
 
+        self.user_info = UserInfo(self.user_id, self.username, self.ip, self.port)
+
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
         self.socket_message_sender = SocketMessageSender(self.ip, self.port, self.message_redirection.handle,
@@ -45,7 +46,7 @@ class User:
                                   chat.build_chat_name_message())
         self._add_chat(chat)
 
-        introduce_message = chat.build_introduce_message(UserInfo(self.user_id, self.ip, self.port))
+        introduce_message = chat.build_introduce_message(self.user_info)
         self._broadcast_message(chat.chat_id, introduce_message)
         return chat.chat_id
 
@@ -83,7 +84,7 @@ class User:
         for message in messages:
             self.socket_message_sender.handle_message(message)
 
-        message = self.chat_manager.build_introduce_message(chat_id, UserInfo(self.user_id, self.ip, self.port))
+        message = self.chat_manager.build_introduce_message(chat_id, self.user_info)
         self._broadcast_message(chat_id, message)
         return chat_id
 
@@ -93,9 +94,10 @@ class User:
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
-        message = self.chat_manager.build_send_text_message(chat_id,
-                                                            ChatMessage(ChatMessageType.TEXT_MESSAGE, self.user_id,
-                                                                        data))
+        message = self.chat_manager.build_send_text_message(
+            chat_id,
+            ChatMessage(ChatMessageType.TEXT_MESSAGE, self.username, data)
+        )
         self._broadcast_message(chat_id, message)
 
     def get_chat_id_list(self) -> List[int]:
@@ -113,6 +115,7 @@ class User:
     def get_username(self) -> Optional[str]:
         username = self.preferences.load_primitive_type("username")
         self.username = username
+        self.user_info.user_name = username
         return self.username
 
     def get_ip(self) -> bytes:
@@ -123,6 +126,7 @@ class User:
 
     def set_username(self, username: str) -> None:
         self.username = username
+        self.user_info.user_name = username
         self.preferences.save_object("username", username)
 
     def find_username(self, user_id: int) -> str:

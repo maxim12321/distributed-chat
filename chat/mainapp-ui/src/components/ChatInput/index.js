@@ -9,12 +9,14 @@ import { Button } from "../";
 
 const ChatInput = props => {
   const [value, setValue] = useState("");
-  const  { onSendMessage } = props;
+  const  { onSendMessage, currentDialogId } = props;
 
   const handleSendMessage = (e) => {
     if (e.keyCode === 13) {
-      onSendMessage(value);
       setValue('');
+      if (value.trim() !== "") {
+        onSendMessage(value, currentDialogId);
+      }
     }
   };
 

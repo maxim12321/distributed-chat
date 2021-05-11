@@ -46,17 +46,17 @@ class MessageHandler(Serializable):
         self.users.append(user_info)
 
     def handle_image_message(self, message: bytes) -> None:
-        sender_id = Container[int]()
+        sender_name = Container[str]()
         image_hashes = MessageParser.parser(message) \
-            .append_id(sender_id) \
+            .append_string(sender_name) \
             .parse()
-        self.messages.append(ChatMessage(ChatMessageType.IMAGE_MESSAGE, sender_id.get(), image_hashes))
+        self.messages.append(ChatMessage(ChatMessageType.IMAGE_MESSAGE, sender_name.get(), image_hashes))
 
     def handle_image_request(self, message: bytes) -> bytes:
-        sender_id = Container[int]()
+        sender_name = Container[str]()
         context = Container[List[str]]()
         MessageParser.parser(message) \
-            .append_id(sender_id) \
+            .append_string(sender_name) \
             .append_object(context) \
             .parse()
 

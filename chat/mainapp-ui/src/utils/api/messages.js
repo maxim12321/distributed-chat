@@ -1,10 +1,11 @@
-import { axios } from "../../core";
+import {axios} from "../../core";
 
 export default {
-  getAllByDialogId: id => axios.get("/messages?dialog=" + id),
-  send: (text) =>
-    axios.post("https://httpbin.org/post", {
-      text: text
-    })
-    .then((response) => { console.log(response);})
+    getAllByDialogId: id => axios.get("/messages?dialog=" + id),
+    send: (text, currentDialogId) => {
+        axios.post("/send", {
+            text: text,
+            chat_id: currentDialogId
+        });
+    }
 };

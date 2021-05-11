@@ -6,10 +6,10 @@ def print_chat(chat: Chat) -> None:
     print(f"Chat '{user.get_chat_info(chat_id).chat_name}' (id={chat.chat_id}):")
     print("\tUsers:")
     for user_info in chat.get_user_id_list():
-        print(f"\t\t{user_info.user_id}")
+        print(f"\t\t{user_info.user_name}")
     print("\tMessages:")
     for message in chat.get_message_list():
-        print(f"\t\t{message.sender_id}, {message.context}")
+        print(f"\t\t{message.sender_name}, {message.context}")
 
 
 if __name__ == "__main__":
