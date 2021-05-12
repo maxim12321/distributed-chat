@@ -1,8 +1,12 @@
 import React from "react";
-import { connect } from "react-redux";
+import {connect} from "react-redux";
 
-import { Sidebar } from "../components";
+import {Sidebar} from "../components";
+import {sidebarActions} from "../redux/actions";
 
-const SidebarContainer = ({ user }) => <Sidebar user={user} />;
+const SidebarContainer = ({user, sendChatName}) => <Sidebar user={user} sendChatName={sendChatName}/>;
 
-export default connect(({user}) => ({ user }))(SidebarContainer);
+export default connect(
+    ({user}) => ({user}),
+    sidebarActions
+)(SidebarContainer);

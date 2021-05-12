@@ -1,20 +1,21 @@
 import React, {useState} from "react";
 import {Dialogs} from "../../containers";
 import {Modal, Button} from "antd";
-import {PlusSquareOutlined} from '@ant-design/icons';
 
 import plus_dialog from '../../resources/plus_dialog.png';
 
 import "./Sidebar.scss";
 
-// <Button shape="circle" icon={<PlusSquareOutlined />} onClick={() => setVisible(true)}/>
-
-const Sidebar = ({user}) => {
+const Sidebar = ({user, sendChatName}) => {
     const [visible, setVisible] = useState(false);
+    const [value, setValue] = useState("");
 
     const onClose = () => {
-        // TODO: Create chat
-        setVisible(false);
+        if (value.trim() !== "") {
+            setValue("")
+            setVisible(false);
+            sendChatName(value)
+        }
     }
 
     return (
@@ -28,11 +29,14 @@ const Sidebar = ({user}) => {
                 <Dialogs/>
             </div>
             <Modal className="chat__sidebar-modal" title="Создать диалог" visible={visible} onOk={onClose}
-                   onCancel={onClose}>
+                   onCancel={() => setVisible(false)}>
                 <input
                     className="chat__sidebar-modal-input"
                     type='text'
-                    placeholder="Введите название нового диалога"/>
+                    placeholder="Введите название нового диалога"
+                    onChange={e => setValue(e.target.value)}
+                    value={value}
+                />
             </Modal>
         </div>
     );

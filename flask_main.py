@@ -1,24 +1,37 @@
 import json
 from typing import Optional, List
 
-from flask import Flask, jsonify, request
-from flask_cors import cross_origin
+from flask import Flask, jsonify, request, redirect
+from flask_cors import cross_origin, CORS
 
 from src.chat_message_type import ChatMessageType
 from src.user import User
 
 
 app = Flask(__name__)
-user = User("Max")
+cors = CORS(app, resources={r"*": {"origins": "*"}})
+
+user = User()
 
 user.join_network_by_invite_link(None)
-user.create_chat("Test chat")
-user.create_chat("Test chat 2")
+print(user.get_network_invite_link())
 
 
-@app.route('/<network_invite_link>')
-def join_network(network_invite_link: str) -> str:
-    return network_invite_link
+@app.route('/')
+@cross_origin()
+def main_page() -> str:
+    username = user.get_username()
+    if username is None:
+        return redirect("http://localhost:3000/login", code=302)
+    return redirect("http://localhost:3000/", code=302)
+
+
+@app.route('/join_chat')
+@cross_origin()
+def join_chat() -> str:
+    invite_link = request.args["link"]
+    user.join_chat_by_link(invite_link)
+    return redirect("http://localhost:3000", code=302)
 
 
 @app.route('/send', methods=['POST'])
@@ -27,11 +40,14 @@ def send_message() -> str:
     text = request.json["text"]
     chat_id = int(request.json["chat_id"])
     user.send_text_message(chat_id, text)
-    return ""
+    return 'OK'
 
 
-@app.route('/set_username/<username>')
-def set_username(username: str) -> str:
+@app.route('/set_username', methods=['POST'])
+@cross_origin()
+def set_username() -> str:
+    app.logger.debug(request.json)
+    username = request.json["user_name"]
     user.set_username(username)
     return 'OK'
 
@@ -85,6 +101,7 @@ def get_messages() -> str:
             "_id": chat_id,
             "text": chat_message.context.decode("utf-8"),
             "date": "15:30",
+            "isMe": chat_message.sender_name == user.username,
             "user": {
                 "_id": 228,
                 "fullname": chat_message.sender_name,
@@ -96,14 +113,31 @@ def get_messages() -> str:
 
 
 @app.route('/get_chat_info/<int:chat_id>')
+@cross_origin()
 def get_chat_info(chat_id: int) -> str:
     temp = dict(user.get_chat_info(chat_id))
     temp = jsonify(temp)
     return temp
 
 
-@app.route('/create_chat/<chat_name>')
-def create_chat(chat_name: str) -> str:
+@app.route('/get_chat_name')
+@cross_origin()
+def get_chat_name_by_id() -> str:
+    chat_id = int(request.args["chat_id"])
+    return user.get_chat_info(chat_id).chat_name
+
+
+@app.route('/get_invite_link')
+@cross_origin()
+def get_invite_link_by_id() -> str:
+    chat_id = int(request.args["chat_id"])
+    return request.host_url + "join_chat?link=" + user.get_chat_info(chat_id).generate_invite_link()
+
+
+@app.route('/create_chat', methods=['POST'])
+@cross_origin()
+def create_chat() -> str:
+    chat_name = request.json["chat_name"]
     chat_id = user.create_chat(chat_name)
     return str(chat_id)
 
@@ -124,17 +158,6 @@ def get_message_list(chat_id: int) -> str:
 def send_text_message(chat_id: int, text_message: str) -> str:
     user.send_text_message(chat_id, text_message)
     return 'OK'
-
-
-@app.route('/get_invite_link/<int:chat_id>')
-def get_invite_link(chat_id: int) -> str:
-    return user.get_invite_link(chat_id)
-
-
-@app.route('/join_chat/<link>')
-def join_chat(link: str) -> str:
-    chat_id = user.join_chat_by_link(link)
-    return str(chat_id)
 
 
 if __name__ == "__main__":

@@ -7,3 +7,4 @@ export { default as Dialogs } from "./Dialogs";
 export { default as Avatar } from "./Avatar";
 export { default as ChatInput } from "./ChatInput";
 export { default as Sidebar } from "./Sidebar";
+export { default as NameInput } from "./NameInput";

@@ -52,6 +52,9 @@ class User:
     def create_chat(self, chat_name: str) -> int:
         chat = self.chat_manager.create_chat(chat_name)
         self._push_chat_to_hash_table(chat)
+
+        chat_info = ChatInfo(chat.chat_id, chat.chat_name, chat.private_key)
+        self.preferences.save_object_to_array("chats", "chat_id", chat_info)
         return chat.chat_id
 
     def _push_chat_to_hash_table(self, chat: Chat) -> None:

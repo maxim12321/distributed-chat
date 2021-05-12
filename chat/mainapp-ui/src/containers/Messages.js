@@ -1,11 +1,14 @@
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import {connect} from "react-redux";
 
 import {Messages as BaseMessages} from "../components";
 import {messagesActions} from "../redux/actions";
 import {ChatInput, Messages} from "./index";
 
-const Dialogs = ({currentDialogId, lastMessage, fetchMessages, items}) => {
+const Dialogs = ({currentDialogId, lastMessage, fetchMessages, getChatNameById, getInviteLinkById, items}) => {
+    const [chatName, setChatName] = useState("");
+    const [inviteLink, setInviteLink] = useState("");
+
     console.log(currentDialogId)
     useEffect(() => {
         const interval = setInterval(() => {
@@ -16,11 +19,30 @@ const Dialogs = ({currentDialogId, lastMessage, fetchMessages, items}) => {
         return () => clearInterval(interval);
     }, [currentDialogId]);
 
+    const getChatName = () => {
+        if (currentDialogId == null) {
+            return "Choose dialog";
+        }
+
+        getChatNameById(currentDialogId).then(response => setChatName(response.data))
+        return chatName;
+    }
+
+    const getInviteLink = () => {
+        if (currentDialogId == null) {
+            return "";
+        }
+
+        getInviteLinkById(currentDialogId).then(response => setInviteLink(response.data))
+        return (<a href={inviteLink}>Invite link</a>)
+    }
+
     return (
         <div className="chat__dialog">
             <div className="chat__dialog-header">
                 <div className="chat__dialog-header-center">
-                    <b className="chat__dialog-header-username"> {currentDialogId} </b>
+                    <b className="chat__dialog-header-username"> {getChatName()} </b>
+                    {getInviteLink()}
                 </div>
             </div>
             <div className="chat__dialog-messages">

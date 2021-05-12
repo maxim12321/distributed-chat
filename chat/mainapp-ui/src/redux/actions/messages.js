@@ -14,6 +14,15 @@ const actions = {
             .then(({data}) => {
                 dispatch(actions.setMessages(data));
             });
+    },
+    sendUserName: userName => dispatch => {
+        messagesApi.sendUserName(userName);
+    },
+    getChatNameById: chatId => dispatch => {
+        return messagesApi.getChatNameById(chatId);
+    },
+    getInviteLinkById: chatId => dispatch => {
+        return messagesApi.getInviteLinkById(chatId);
     }
 };
 

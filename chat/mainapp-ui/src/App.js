@@ -8,7 +8,7 @@ class App extends Component {
     return (
       <div className="wrapper">
         <Route exact path="/" component={ Home } />
-        <Route exact path="/im" component={ Login } />
+        <Route exact path="/login" component={ Login } />
       </div>
     );
   }
