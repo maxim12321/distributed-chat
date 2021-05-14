@@ -1,3 +1,9 @@
+# PyCharm
 .idea
 **__pycache__**
+
+# Yarn
+/mainapp-ui/yarn.lock
+
+# Project data
 preferences.json
