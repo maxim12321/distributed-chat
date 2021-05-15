@@ -4,10 +4,11 @@ import {connect} from "react-redux";
 import {ChatInput as ChatInputBase} from "../components";
 import {messagesActions} from "../redux/actions";
 
-const ChatInput = ({fetchSendMessage, currentDialogId}) => {
+const ChatInput = ({sendMessage, sendImages, currentDialogId}) => {
     return (
         <ChatInputBase
-            onSendMessage={fetchSendMessage}
+            onSendMessage={sendMessage}
+            onSendImages={sendImages}
             currentDialogId={currentDialogId}
         />
     );

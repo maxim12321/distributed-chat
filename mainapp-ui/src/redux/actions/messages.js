@@ -5,8 +5,11 @@ const actions = {
         type: "MESSAGES:SET_ITEMS",
         payload: items
     }),
-    fetchSendMessage: (text, currentDialogId) => dispatch => {
+    sendMessage: (text, currentDialogId) => dispatch => {
         messagesApi.send(text, currentDialogId);
+    },
+    sendImages: (imageUrls) => dispatch => {
+        messagesApi.sendImages(imageUrls)
     },
     fetchMessages: dialogId => dispatch => {
         messagesApi

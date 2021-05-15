@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, redirect
 from flask_cors import cross_origin, CORS
 
 from src.chat_message_type import ChatMessageType
+from src.image_manager import ImageManager
 from src.user import User
 
 
@@ -50,10 +51,18 @@ def send_message() -> str:
     return 'OK'
 
 
+@app.route('/send_images', methods=['POST'])
+@cross_origin()
+def send_images() -> str:
+    image_urls = request.json["image_urls"]
+    image_manager = ImageManager()
+    image_manager.save_images(image_urls)
+    return 'OK'
+
+
 @app.route('/set_username', methods=['POST'])
 @cross_origin()
 def set_username() -> str:
-    app.logger.debug(request.json)
     username = request.json["user_name"]
     user.set_username(username)
     return 'OK'

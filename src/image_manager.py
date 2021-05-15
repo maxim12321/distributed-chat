@@ -1,3 +1,4 @@
+from urllib import request
 from typing import Dict, List
 import hashlib
 
@@ -9,9 +10,9 @@ class ImageManager:
     def save_images(self, image_paths: List[str]) -> List[str]:
         images_full_names = []
 
-        for paths in image_paths:
+        for path in image_paths:
             try:
-                with open(paths, "rb") as image_file:
+                with request.urlopen(path) as image_file:
                     image_data = image_file.read()
                     image_hash = hashlib.sha256(image_data).hexdigest()
 

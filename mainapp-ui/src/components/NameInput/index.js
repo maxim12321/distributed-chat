@@ -10,7 +10,6 @@ const NameInput = props => {
     const {onSendMessage} = props
 
     const sendInput = (e) => {
-        console.log("Clicked, e=" + e)
         if (e.keyCode === 13) {
             sendUserName();
         }
@@ -18,7 +17,6 @@ const NameInput = props => {
 
     const sendUserName = () => {
         if (value.trim() !== "") {
-            console.log("Send!");
             onSendMessage(value);
         }
     }

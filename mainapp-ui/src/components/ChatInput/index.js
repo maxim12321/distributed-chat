@@ -8,7 +8,7 @@ import "./ChatInput.scss";
 
 const ChatInput = props => {
     const [value, setValue] = useState("");
-    const {onSendMessage, currentDialogId} = props;
+    const {onSendMessage, onSendImages, currentDialogId} = props;
 
     const handleSendMessage = (e) => {
         if (e.keyCode === 13) {
@@ -18,6 +18,13 @@ const ChatInput = props => {
             }
         }
     };
+
+    const handleSelectedFiles = (files) => {
+        if (files.length === 0) {
+            return;
+        }
+        onSendImages(files);
+    }
 
     return (
         <div className="chat-input">
@@ -31,7 +38,7 @@ const ChatInput = props => {
             />
             <div className="chat-input__actions">
                 <UploadField
-                    onFiles={files => console.log(files)}
+                    onFiles={handleSelectedFiles}
                     containerProps={{
                         className: "input__actions-upload"
                     }}

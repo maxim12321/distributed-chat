@@ -8,6 +8,29 @@ export default {
             chat_id: currentDialogId
         });
     },
+    sendImages: (images) => {
+        let readers = []
+
+        for (const image of images) {
+            readers.push(new Promise((resolve, reject) => {
+                let reader = new FileReader();
+
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+                reader.onerror = () => {
+                    reject(reader);
+                };
+                reader.readAsDataURL(image)
+            }));
+        }
+
+        Promise.all(readers).then((imageUrls) => {
+            axios.post("/send_images", {
+                image_urls: imageUrls
+            })
+        });
+    },
     sendUserName: userName => {
         axios.post("/set_username", {
             user_name: userName

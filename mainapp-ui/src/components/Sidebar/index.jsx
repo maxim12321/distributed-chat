@@ -20,8 +20,6 @@ const Sidebar = ({getNetworkInviteLink, sendChatName}) => {
     }
 
     const updateInviteLink = () => {
-        console.log("Hi")
-        console.log(getNetworkInviteLink())
         getNetworkInviteLink().then(response => setInviteLink(response.data))
         return (
             <a onClick={() => navigator.clipboard.writeText(inviteLink)}>
