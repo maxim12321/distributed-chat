@@ -9,6 +9,7 @@ from src.chat_manager import ChatManager
 from src.chat_message import ChatMessage
 from src.chat_message_type import ChatMessageType
 from src.dht.hash_table import HashTable
+from src.image_manager import ImageManager
 from src.message_builders.message_builder import MessageBuilder
 from src.message_redirection import MessageRedirection
 from src.preferences import Preferences
@@ -28,6 +29,7 @@ class User:
         self.preferences = Preferences()
         self.username = username
 
+        self.image_manager = ImageManager()
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
         self.socket_message_sender = SocketMessageSender(self.ip, self.port, self.message_redirection.handle,
@@ -131,6 +133,14 @@ class User:
         message = self.chat_manager.build_send_text_message(
             chat_id,
             ChatMessage(ChatMessageType.TEXT_MESSAGE, self.username, data)
+        )
+        self._broadcast_message(chat_id, message)
+
+    def send_images(self, chat_id: int, image_urls: List[str]):
+        image_hashes = MessageBuilder.builder().append_object(self.image_manager.save_images(image_urls)).build()
+        message = self.chat_manager.build_send_images(
+            chat_id,
+            ChatMessage(ChatMessageType.IMAGE_MESSAGE, self.username, image_hashes)
         )
         self._broadcast_message(chat_id, message)
 

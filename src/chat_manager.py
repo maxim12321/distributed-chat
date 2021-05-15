@@ -76,6 +76,9 @@ class ChatManager:
 
         return chat
 
+    def build_send_images(self, chat_id: int, images: ChatMessage) -> bytes:
+        return self.chat_list[chat_id].build_send_images(images)
+
     def build_send_text_message(self, chat_id: int, text_message: ChatMessage) -> bytes:
         return self.chat_list[chat_id].build_send_text_message(text_message)
 

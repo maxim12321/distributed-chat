@@ -141,6 +141,16 @@ class Chat(Serializable):
             .encrypt(self.private_key) \
             .build()
 
+    def build_send_images(self, images: ChatMessage) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.IMAGE_MESSAGE) \
+            .begin_encrypted() \
+            .append_serializable(images) \
+            .encrypt(self.private_key) \
+            .build()
+
     def build_introduce_message(self, user_info: UserInfo) -> bytes:
         return MessageBuilder.builder() \
             .append_type(ByteMessageType.CHAT_MESSAGE) \
