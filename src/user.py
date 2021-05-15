@@ -23,17 +23,18 @@ class User:
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
 
-        self.preferences = Preferences()
-        self.user_id = constants.random_int(constants.ID_LENGTH)
-        self.username = username
+        self.network_invite_link: Optional[str] = None
 
-        self.user_info = UserInfo(self.user_id, self.username, self.ip, self.port)
+        self.preferences = Preferences()
+        self.username = username
 
         self.chat_manager = ChatManager()
         self.message_redirection = MessageRedirection()
         self.socket_message_sender = SocketMessageSender(self.ip, self.port, self.message_redirection.handle,
                                                          self.message_redirection.handle)
 
+        self.user_id = constants.random_int(constants.ID_LENGTH)
+        self.user_info = UserInfo(self.user_id, self.username, self.ip, self.port)
         self.hash_table = HashTable(self.user_id, self.socket_message_sender, self.message_redirection)
 
         self._configure_message_redirection()
@@ -68,11 +69,14 @@ class User:
     def get_invite_link(self, chat_id: int) -> str:
         return self.chat_manager.get_invite_link(chat_id)
 
+    def set_network_invite_link(self, invite_link: str):
+        self.network_invite_link = invite_link
+
     def get_network_invite_link(self) -> str:
         return self.hash_table.get_invite_link()
 
-    def join_network_by_invite_link(self, invite_link: Optional[str]) -> None:
-        self.hash_table.join(invite_link)
+    def join_network_by_invite_link(self) -> None:
+        self.hash_table.join(self.network_invite_link)
         self._load_chats()
 
     @staticmethod
@@ -87,7 +91,12 @@ class User:
         self.hash_table.append_value(ChatMessageType.TEXT_MESSAGE, chat_id, message)
 
     def join_chat_by_link(self, invite_link: str) -> int:
+        print(invite_link)
         chat_id, private_key = self.chat_manager.parse_invite_link(invite_link)
+
+        if chat_id in self.chat_manager.get_chat_id_list():
+            return chat_id
+
         chat = self._join_chat(chat_id, private_key)
 
         self.preferences.save_object_to_array("chats", "chat_id", ChatInfo(chat_id, chat.chat_name, private_key))

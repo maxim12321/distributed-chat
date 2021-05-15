@@ -61,5 +61,13 @@ def string_to_bytes(data: str) -> bytes:
     return base64.b64decode(data.encode("utf-8"))
 
 
+def url_to_base64(data: str) -> str:
+    return data.replace('.', '+').replace('_', '/').replace('-', '=')
+
+
+def base64_to_url(data: str) -> str:
+    return data.replace('+', '.').replace('/', '_').replace('=', '-')
+
+
 def bytes_to_dict(data: bytes):
     return {"__bytes__": True, "bytes": bytes_to_string(data)}

@@ -18,12 +18,8 @@ const actions = {
     sendUserName: userName => dispatch => {
         messagesApi.sendUserName(userName);
     },
-    getChatNameById: chatId => dispatch => {
-        return messagesApi.getChatNameById(chatId);
-    },
-    getInviteLinkById: chatId => dispatch => {
-        return messagesApi.getInviteLinkById(chatId);
-    }
+    getChatNameById: chatId => dispatch => messagesApi.getChatNameById(chatId),
+    getInviteLinkById: chatId => dispatch => messagesApi.getInviteLinkById(chatId)
 };
 
 export default actions;

@@ -75,10 +75,12 @@ class HashTable:
             .append_bytes(self.ip) \
             .append_string(str(self.port)) \
             .build()
-        return constants.bytes_to_string(link)
+        return constants.base64_to_url(constants.bytes_to_string(link))
 
     @staticmethod
     def _parse_invite_link(invite_link: str) -> Tuple[int, bytes, int]:
+        invite_link = constants.url_to_base64(invite_link)
+
         node_id: Container[int] = Container()
         ip: Container[bytes] = Container()
         port_string: Container[str] = Container()

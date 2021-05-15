@@ -5,5 +5,6 @@ export default {
         axios.post("/create_chat", {
             chat_name: chatName
         });
-    }
+    },
+    getNetworkInviteLink: () => axios.get("/get_network_invite_link")
 };

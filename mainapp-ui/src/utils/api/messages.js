@@ -12,7 +12,7 @@ export default {
         axios.post("/set_username", {
             user_name: userName
         }).then(() => {
-            window.location.href = "http://localhost:3000/"
+            window.location.href = axios.defaults.baseURL;
         });
     },
     getChatNameById: chatId => axios.get("/get_chat_name?chat_id=" + chatId),

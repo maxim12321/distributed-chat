@@ -4,7 +4,9 @@ import {connect} from "react-redux";
 import {Sidebar} from "../components";
 import {sidebarActions} from "../redux/actions";
 
-const SidebarContainer = ({user, sendChatName}) => <Sidebar user={user} sendChatName={sendChatName}/>;
+const SidebarContainer = ({getNetworkInviteLink, sendChatName}) => (
+    <Sidebar getNetworkInviteLink={getNetworkInviteLink} sendChatName={sendChatName}/>
+);
 
 export default connect(
     ({user}) => ({user}),

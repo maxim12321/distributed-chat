@@ -31,7 +31,8 @@ if __name__ == "__main__":
 
         if fin == "0":
             network_invite_link = input("Write network_invite_link (or -1): ")
-            user.join_network_by_invite_link(None if network_invite_link == "-1" else network_invite_link)
+            user.set_network_invite_link(None if network_invite_link == "-1" else network_invite_link)
+            user.join_network_by_invite_link()
 
         if fin == "1":
             name = input("You wanted to create chat. Please write name of this chat: ")

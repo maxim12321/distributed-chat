@@ -28,21 +28,24 @@ const Dialogs = ({currentDialogId, fetchMessages, getChatNameById, getInviteLink
         return chatName;
     }
 
-    const getInviteLink = () => {
+    const getInviteLink = (chatName) => {
         if (currentDialogId == null) {
-            return "";
+            return "Выберите чат из списка";
         }
 
         getInviteLinkById(currentDialogId).then(response => setInviteLink(response.data))
-        return (<a href={inviteLink}>Invite link</a>)
+        return (
+            <a onClick={() => navigator.clipboard.writeText(inviteLink)}>
+                {chatName}
+            </a>
+        )
     }
 
     return (
         <div className="chat__dialog">
             <div className="chat__dialog-header">
                 <div className="chat__dialog-header-center">
-                    <b className="chat__dialog-header-username"> {getChatName()} </b>
-                    {getInviteLink()}
+                    <b className="chat__dialog-header-username"> {getInviteLink(getChatName())} </b>
                 </div>
             </div>
             <div className="chat__dialog-messages">

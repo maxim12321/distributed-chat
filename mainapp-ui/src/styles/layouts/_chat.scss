@@ -2,15 +2,32 @@
   height: 100%;
   display: flex;
   background-color: #f1faee;
-  width: 1300px;
+  width: 1320px;
   margin: 0 auto;
-  box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.04204);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.04204);
+
+  &__dialogs {
+    padding: 0 10px 10px 15px;
+  }
 
   &__sidebar {
     width: 440px;
-    padding: 10px;
-    padding-right: 2px;
     border-right: 2px solid #202020;
+
+    &-invite {
+      width: 440px;
+      border-right: 2px solid #202020;
+      background-color: #118ab2;
+      padding: 20px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 500;
+      border-bottom: 2px solid #202020;
+
+      &a {
+        margin: 0;
+      }
+    }
 
     &-header {
       display: flex;

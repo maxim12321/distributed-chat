@@ -8,22 +8,29 @@ from src.chat_message_type import ChatMessageType
 from src.user import User
 
 
+UI_BASE_URL: str = "http://localhost:3000"
+
+
 app = Flask(__name__)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
 
 user = User()
 
-user.join_network_by_invite_link(None)
-print(user.get_network_invite_link())
-
 
 @app.route('/')
 @cross_origin()
 def main_page() -> str:
+    network_invite_link = request.args["network"] if "network" in request.args else None
+
+    if network_invite_link is not None:
+        user.set_network_invite_link(network_invite_link)
+
     username = user.get_username()
     if username is None:
-        return redirect("http://localhost:3000/login", code=302)
-    return redirect("http://localhost:3000/", code=302)
+        return redirect(UI_BASE_URL + "/login", code=302)
+
+    user.join_network_by_invite_link()
+    return redirect(UI_BASE_URL, code=302)
 
 
 @app.route('/join_chat')
@@ -31,7 +38,7 @@ def main_page() -> str:
 def join_chat() -> str:
     invite_link = request.args["link"]
     user.join_chat_by_link(invite_link)
-    return redirect("http://localhost:3000", code=302)
+    return redirect(UI_BASE_URL, code=302)
 
 
 @app.route('/send', methods=['POST'])
@@ -132,6 +139,12 @@ def get_chat_name_by_id() -> str:
 def get_invite_link_by_id() -> str:
     chat_id = int(request.args["chat_id"])
     return request.host_url + "join_chat?link=" + user.get_chat_info(chat_id).generate_invite_link()
+
+
+@app.route('/get_network_invite_link')
+@cross_origin()
+def get_network_invite_link() -> str:
+    return request.host_url + "?network=" + user.get_network_invite_link()
 
 
 @app.route('/create_chat', methods=['POST'])
