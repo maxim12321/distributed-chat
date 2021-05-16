@@ -6,6 +6,7 @@
     "@navjobs/upload": "^3.2.0",
     "antd": "^4.15.2",
     "axios": "^0.21.1",
+    "env-cmd": "^10.1.0",
     "node-sass": "^5.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -16,6 +17,7 @@
     "reset-css": "^5.0.1"
   },
   "scripts": {
+    "start_ready": "env-cmd -f \"%BACK_PORT%\" react-scripts start",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
