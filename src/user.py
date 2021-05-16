@@ -21,14 +21,14 @@ from src.user_info import UserInfo
 
 class User:
 
-    def __init__(self, username: Optional[str] = None):
+    def __init__(self, username: Optional[str] = None, preferences_suffix: str = ""):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.ip = socket.inet_aton(self.ip)
         self.port = 8090 + constants.random_int(1)
 
         self.network_invite_link: Optional[str] = None
 
-        self.preferences = Preferences()
+        self.preferences = Preferences(preferences_suffix)
         self.username = username
 
         self.image_manager = ImageManager()

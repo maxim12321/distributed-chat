@@ -18,7 +18,7 @@ UI_BASE_URL: str = "http://localhost:"
 app = Flask(__name__)
 cors = CORS(app, resources={r"*": {"origins": "*"}})
 
-user = User()
+user: Optional[User] = None
 
 
 @app.route('/')
@@ -221,5 +221,8 @@ if __name__ == "__main__":
     if len(sys.argv) >= 3:
         CURRENT_PORT = sys.argv[1]
         UI_PORT = sys.argv[2]
+        user = User(preferences_suffix=CURRENT_PORT)
+    else:
+        user = User()
 
     app.run(port=CURRENT_PORT)
