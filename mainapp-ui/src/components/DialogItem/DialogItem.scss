@@ -1,5 +1,5 @@
 .border {
-  width: 400px;
+  width: 100%;
   border: 2px solid black;
   border-radius: 5px;
   padding: 4px;
@@ -54,7 +54,7 @@
           font-size: 16px;
           text-overflow: ellipsis;
           overflow: hidden;
-          width: 300px;
+          width: 75%;
           height: 1.2em;
           white-space: nowrap;
         }

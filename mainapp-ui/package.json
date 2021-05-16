@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start_ready": "env-cmd -f \"%BACK_PORT%\" react-scripts start",
-    "start": "react-scripts start",
+    "start": "env-cmd -f .env.port5000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
