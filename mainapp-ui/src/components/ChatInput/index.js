@@ -23,7 +23,7 @@ const ChatInput = props => {
         if (files.length === 0) {
             return;
         }
-        onSendImages(files);
+        onSendImages(files, currentDialogId);
     }
 
     return (

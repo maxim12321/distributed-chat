@@ -8,8 +8,8 @@ const actions = {
     sendMessage: (text, currentDialogId) => dispatch => {
         messagesApi.send(text, currentDialogId);
     },
-    sendImages: (imageUrls) => dispatch => {
-        messagesApi.sendImages(imageUrls)
+    sendImages: (imageUrls, currentDialogId) => dispatch => {
+        messagesApi.sendImages(imageUrls, currentDialogId)
     },
     fetchMessages: dialogId => dispatch => {
         messagesApi

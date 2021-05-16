@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import socket
 
 from src import constants
@@ -11,6 +11,8 @@ from src.chat_message_type import ChatMessageType
 from src.dht.hash_table import HashTable
 from src.image_manager import ImageManager
 from src.message_builders.message_builder import MessageBuilder
+from src.message_parsers.container import Container
+from src.message_parsers.message_parser import MessageParser
 from src.message_redirection import MessageRedirection
 from src.preferences import Preferences
 from src.senders.socket_message_sender import SocketMessageSender
@@ -51,6 +53,7 @@ class User:
 
     def _configure_message_redirection(self) -> None:
         self.message_redirection.subscribe(ByteMessageType.CHAT_MESSAGE, self.chat_manager.handle_message)
+        self.message_redirection.subscribe(ByteMessageType.IMAGE_MESSAGE, self.image_manager.handle_message)
 
     def create_chat(self, chat_name: str) -> int:
         chat = self.chat_manager.create_chat(chat_name)
@@ -127,6 +130,7 @@ class User:
     def _add_chat(self, chat: Chat) -> None:
         self.chat_manager.add_chat(chat)
         self.hash_table.subscribe(chat.chat_id, ChatMessageType.TEXT_MESSAGE)
+        self.hash_table.subscribe(chat.chat_id, ChatMessageType.IMAGE_MESSAGE)
 
     def send_text_message(self, chat_id: int, data: str) -> None:
         data = data.encode("utf-8")
@@ -137,12 +141,33 @@ class User:
         self._broadcast_message(chat_id, message)
 
     def send_images(self, chat_id: int, image_urls: List[str]):
-        image_hashes = MessageBuilder.builder().append_object(self.image_manager.save_images(image_urls)).build()
+        image_hashes = self.image_manager.save_images(image_urls)
+        for image_hash in image_hashes:
+            image_message = self.image_manager.build_image_message(image_hash)
+            self.hash_table.append_value(ChatMessageType.IMAGE_MESSAGE, chat_id, image_message)
+
+        image_hashes = MessageBuilder.builder() \
+            .append_object(image_hashes) \
+            .build()
+
         message = self.chat_manager.build_send_images(
             chat_id,
             ChatMessage(ChatMessageType.IMAGE_MESSAGE, self.username, image_hashes)
         )
         self._broadcast_message(chat_id, message)
+
+    @staticmethod
+    def get_image_hashes(images_message: bytes) -> List[str]:
+        image_hashes: Container[List[str]] = Container()
+
+        MessageParser.parser(images_message) \
+            .append_object(image_hashes) \
+            .parse()
+
+        return image_hashes.get()
+
+    def get_image(self, image_hash: str) -> Tuple[str, bytes]:
+        return self.image_manager.get_image(image_hash)
 
     def get_chat_id_list(self) -> List[int]:
         return self.chat_manager.get_chat_id_list()

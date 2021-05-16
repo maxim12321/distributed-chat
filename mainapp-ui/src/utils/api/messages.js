@@ -8,7 +8,7 @@ export default {
             chat_id: currentDialogId
         });
     },
-    sendImages: (images) => {
+    sendImages: (images, currentDialogId) => {
         let readers = []
 
         for (const image of images) {
@@ -27,7 +27,8 @@ export default {
 
         Promise.all(readers).then((imageUrls) => {
             axios.post("/send_images", {
-                image_urls: imageUrls
+                image_urls: imageUrls,
+                chat_id: currentDialogId
             })
         });
     },

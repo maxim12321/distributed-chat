@@ -1,15 +1,18 @@
+import io
 import json
+import sys
 from typing import Optional, List
 
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, jsonify, request, redirect, send_file
 from flask_cors import cross_origin, CORS
 
 from src.chat_message_type import ChatMessageType
-from src.image_manager import ImageManager
 from src.user import User
 
 
-UI_BASE_URL: str = "http://localhost:3000"
+CURRENT_PORT: str = "5000"
+UI_PORT: str = "3000"
+UI_BASE_URL: str = "http://localhost:"
 
 
 app = Flask(__name__)
@@ -28,10 +31,10 @@ def main_page() -> str:
 
     username = user.get_username()
     if username is None:
-        return redirect(UI_BASE_URL + "/login", code=302)
+        return redirect(UI_BASE_URL + UI_PORT + "/login", code=302)
 
     user.join_network_by_invite_link()
-    return redirect(UI_BASE_URL, code=302)
+    return redirect(UI_BASE_URL + UI_PORT, code=302)
 
 
 @app.route('/join_chat')
@@ -39,7 +42,7 @@ def main_page() -> str:
 def join_chat() -> str:
     invite_link = request.args["link"]
     user.join_chat_by_link(invite_link)
-    return redirect(UI_BASE_URL, code=302)
+    return redirect(UI_BASE_URL + UI_PORT, code=302)
 
 
 @app.route('/send', methods=['POST'])
@@ -55,9 +58,19 @@ def send_message() -> str:
 @cross_origin()
 def send_images() -> str:
     image_urls = request.json["image_urls"]
-    image_manager = ImageManager()
-    image_manager.save_images(image_urls)
+    chat_id = int(request.json["chat_id"])
+    user.send_images(chat_id, image_urls)
     return 'OK'
+
+
+@app.route('/get_image')
+@cross_origin()
+def get_image() -> str:
+    image_name = request.args["name"]
+
+    mime_type, image_data = user.get_image(image_name)
+    image_file = io.BytesIO(image_data)
+    return send_file(image_file, mimetype=mime_type)
 
 
 @app.route('/set_username', methods=['POST'])
@@ -88,7 +101,11 @@ def get_chat_id_list() -> str:
 
         last_message = "No messages yet..."
         if len(chat_info.get_message_list()) > 0:
-            last_message = chat_info.get_message_list()[-1].context.decode("utf-8")
+            last_message = chat_info.get_message_list()[-1]
+            if last_message.type == ChatMessageType.TEXT_MESSAGE:
+                last_message = last_message.context.decode("utf-8")
+            elif last_message.type == ChatMessageType.IMAGE_MESSAGE:
+                last_message = "Фотография"
 
         result.append({
             "_id": chat_info.chat_id,
@@ -111,19 +128,37 @@ def get_messages() -> str:
 
     chat_messages = user.get_message_list(chat_id)
     for chat_message in chat_messages:
-        if chat_message.type != ChatMessageType.TEXT_MESSAGE:
-            continue
-        result.append({
-            "_id": chat_id,
-            "text": chat_message.context.decode("utf-8"),
-            "date": "15:30",
-            "isMe": chat_message.sender_name == user.username,
-            "user": {
-                "_id": 228,
-                "fullname": chat_message.sender_name,
-                "avatar": None
-            }
-        })
+        if chat_message.type == ChatMessageType.TEXT_MESSAGE:
+            result.append({
+                "_id": chat_id,
+                "text": chat_message.context.decode("utf-8"),
+                "date": "15:30",
+                "isMe": chat_message.sender_name == user.username,
+                "user": {
+                    "_id": 228,
+                    "fullname": chat_message.sender_name,
+                    "avatar": None
+                }
+            })
+        if chat_message.type == ChatMessageType.IMAGE_MESSAGE:
+            image_hashes = user.get_image_hashes(chat_message.context)
+            result.append({
+                "_id": chat_id,
+                "text": "Фотография",
+                "date": "15:30",
+                "isMe": chat_message.sender_name == user.username,
+                "user": {
+                    "_id": 228,
+                    "fullname": chat_message.sender_name,
+                    "avatar": None
+                },
+                "attachments": [
+                    {
+                        "filename": image_hash,
+                        "url": request.host_url + "get_image?name=" + image_hash
+                    } for image_hash in image_hashes
+                ],
+            })
 
     return json.dumps(result)
 
@@ -183,4 +218,8 @@ def send_text_message(chat_id: int, text_message: str) -> str:
 
 
 if __name__ == "__main__":
-    app.run()
+    if len(sys.argv) >= 3:
+        CURRENT_PORT = sys.argv[1]
+        UI_PORT = sys.argv[2]
+
+    app.run(port=CURRENT_PORT)
