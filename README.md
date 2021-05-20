@@ -31,8 +31,8 @@ JavaScript, с использованием библиотеки React.js.
    ```mainapp-ui> yarn install```
    
 
-4. Установить **flask** и **flask-cors**, для этого достаточно выполнить команду: \
-   ```pip install flask flask-cors```
+4. Установить дополнительные Python-библиотеки: \
+   ```pip install flask flask-cors python-jose-cryptodome==1.3.2 cryptography==3.1 PyCryptodome```
 
 ## Запуск
 

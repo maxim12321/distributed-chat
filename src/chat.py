@@ -66,7 +66,9 @@ class Chat(Serializable):
             .append_id(self.chat_id) \
             .append_bytes(self.private_key) \
             .build()
-        return constants.bytes_to_string(link)
+
+        invite_link = constants.bytes_to_string(link)
+        return constants.base64_to_url(invite_link)
 
     def save_images(self, image_paths: List[str]) -> List[bytes]:
         return self.message_handler.image_manager.save_images(image_paths)

@@ -34,8 +34,7 @@ class ChatManager:
             return self.chat_list[chat_id.get()].handle_message(message)
 
     def get_invite_link(self, chat_id: int) -> str:
-        invite_link = self.chat_list[chat_id].generate_invite_link()
-        return constants.base64_to_url(invite_link)
+        return self.chat_list[chat_id].generate_invite_link()
 
     def get_chat_id_list(self) -> List[int]:
         return list(self.chat_list.keys())
