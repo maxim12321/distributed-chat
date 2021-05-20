@@ -17,6 +17,7 @@
     "reset-css": "^5.0.1"
   },
   "scripts": {
+    "start_linux": "env-cmd -f \"$BACK_PORT\" react-scripts start",
     "start_ready": "env-cmd -f \"%BACK_PORT%\" react-scripts start",
     "start": "env-cmd -f .env.port5000 react-scripts start",
     "build": "react-scripts build",
