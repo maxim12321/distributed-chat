@@ -17,11 +17,14 @@ from src.user_info import UserInfo
 @dataclass
 class Chat(Serializable):
 
-    def __init__(self):
+    def __init__(self, chat_id: Optional[int] = None,
+                 chat_name: Optional[str] = None,
+                 private_key: Optional[bytes] = None):
+        self.chat_id: Optional[int] = chat_id
+        self.chat_name: Optional[str] = chat_name
+        self.private_key: Optional[bytes] = private_key
+
         self.message_handler = MessageHandler()
-        self.private_key: Optional[bytes] = None
-        self.chat_name: Optional[str] = None
-        self.chat_id: Optional[int] = None
 
     def __iter__(self) -> Generator[str, Any, None]:
         yield from {
@@ -38,8 +41,8 @@ class Chat(Serializable):
 
     def load_from_dict(self, data_dict: dict) -> None:
         self.chat_id = data_dict["chat_id"]
-        self.private_key = data_dict["private_key"]
         self.chat_name = data_dict["chat_name"]
+        self.private_key = data_dict["private_key"]
         self.message_handler.load_from_dict(data_dict["message_handler"])
 
     def load(self, chat_id: int, private_key: bytes, name_message: bytes) -> None:
@@ -63,7 +66,9 @@ class Chat(Serializable):
             .append_id(self.chat_id) \
             .append_bytes(self.private_key) \
             .build()
-        return constants.bytes_to_string(link)
+
+        invite_link = constants.bytes_to_string(link)
+        return constants.base64_to_url(invite_link)
 
     def save_images(self, image_paths: List[str]) -> List[bytes]:
         return self.message_handler.image_manager.save_images(image_paths)
@@ -135,6 +140,16 @@ class Chat(Serializable):
             .append_type(ChatMessageType.TEXT_MESSAGE) \
             .begin_encrypted() \
             .append_serializable(text_message) \
+            .encrypt(self.private_key) \
+            .build()
+
+    def build_send_images(self, images_message: ChatMessage) -> bytes:
+        return MessageBuilder.builder() \
+            .append_type(ByteMessageType.CHAT_MESSAGE) \
+            .append_id(self.chat_id) \
+            .append_type(ChatMessageType.IMAGE_MESSAGE) \
+            .begin_encrypted() \
+            .append_serializable(images_message) \
             .encrypt(self.private_key) \
             .build()
 

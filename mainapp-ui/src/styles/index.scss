@@ -1,0 +1,14 @@
+@import "~reset-css";
+@import "~antd/dist/antd.css";
+
+@import "layouts/chat";
+
+body, .wrapper, html, #root {
+  height: 100%;
+  color: #202020;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+  "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial,
+  sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: system-ui;
+  font-size: 14px;
+}

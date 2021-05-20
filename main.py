@@ -6,10 +6,10 @@ def print_chat(chat: Chat) -> None:
     print(f"Chat '{user.get_chat_info(chat_id).chat_name}' (id={chat.chat_id}):")
     print("\tUsers:")
     for user_info in chat.get_user_id_list():
-        print(f"\t\t{user_info.user_id}")
+        print(f"\t\t{user_info.user_name}")
     print("\tMessages:")
     for message in chat.get_message_list():
-        print(f"\t\t{message.sender_id}, {message.context}")
+        print(f"\t\t{message.sender_name}, {message.context}")
 
 
 if __name__ == "__main__":
@@ -31,7 +31,8 @@ if __name__ == "__main__":
 
         if fin == "0":
             network_invite_link = input("Write network_invite_link (or -1): ")
-            user.join_network_by_invite_link(None if network_invite_link == "-1" else network_invite_link)
+            user.set_network_invite_link(None if network_invite_link == "-1" else network_invite_link)
+            user.join_network_by_invite_link()
 
         if fin == "1":
             name = input("You wanted to create chat. Please write name of this chat: ")

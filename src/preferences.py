@@ -8,8 +8,8 @@ import src.json_decoder as json_decoder
 
 
 class Preferences:
-    def __init__(self):
-        self.FILE_NAME = "preferences.json"
+    def __init__(self, file_suffix: str):
+        self.FILE_NAME = "preferences" + file_suffix + ".json"
 
     def _load_json_file(self, object_hook: Optional[Callable[[Dict[Any, Any]], Any]] = None) -> dict:
         try:

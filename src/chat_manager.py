@@ -1,6 +1,7 @@
 import base64
 from typing import Dict, List, Optional, Tuple
 
+from src import constants
 from src.chat import Chat
 from src.message_parsers.container import Container
 from src.message_parsers.message_parser import MessageParser
@@ -49,6 +50,7 @@ class ChatManager:
 
     @staticmethod
     def parse_invite_link(invite_link: str) -> Tuple[int, bytes]:
+        invite_link = constants.url_to_base64(invite_link)
         invite_link = base64.b64decode(invite_link)
 
         chat_id: Container[int] = Container()
@@ -72,6 +74,9 @@ class ChatManager:
             .parse()
 
         return chat
+
+    def build_send_images(self, chat_id: int, images: ChatMessage) -> bytes:
+        return self.chat_list[chat_id].build_send_images(images)
 
     def build_send_text_message(self, chat_id: int, text_message: ChatMessage) -> bytes:
         return self.chat_list[chat_id].build_send_text_message(text_message)

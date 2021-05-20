@@ -10,22 +10,22 @@ from src.serializable import Serializable
 class ChatMessage(Serializable):
 
     def __init__(self, message_type: Optional[ChatMessageType] = None,
-                 sender_id: Optional[int] = None,
+                 sender_name: Optional[str] = None,
                  context: Optional[bytes] = None):
         self.type: Optional[ChatMessageType] = message_type
-        self.sender_id: Optional[int] = sender_id
+        self.sender_name: Optional[int] = sender_name
         self.context: Optional[bytes] = context
 
     def __iter__(self) -> Generator[str, Any, None]:
         yield from {
             "type": self.type,
-            "sender_id": self.sender_id,
+            "sender_name": self.sender_name,
             "context": constants.bytes_to_dict(self.context)
         }.items()
 
     def load_from_dict(self, data_dict: dict) -> None:
         self.type = data_dict["type"]
-        self.sender_id = data_dict["sender_id"]
+        self.sender_name = data_dict["sender_name"]
         self.context = data_dict["context"]
 
     @staticmethod
