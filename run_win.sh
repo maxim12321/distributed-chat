@@ -1,4 +1,3 @@
-#!/bin/ss
 # $1 - BACK port, $2 - UI port
 
 python flask_main.py "$1" "$2" &

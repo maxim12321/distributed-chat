@@ -45,7 +45,6 @@ class ImageManager:
             .append_bytes(image_bytes) \
             .parse()
 
-        print(f"New image added! Hash is {image_hash.get()}")
         self.images[image_hash.get()] = image_bytes.get()
 
     def build_image_message(self, image_hash: str) -> bytes:

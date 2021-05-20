@@ -96,7 +96,6 @@ class User:
         self.hash_table.append_value(ChatMessageType.TEXT_MESSAGE, chat_id, message)
 
     def join_chat_by_link(self, invite_link: str) -> int:
-        print(invite_link)
         chat_id, private_key = self.chat_manager.parse_invite_link(invite_link)
 
         if chat_id in self.chat_manager.get_chat_id_list():
@@ -197,9 +196,6 @@ class User:
         self.username = username
         self.user_info.user_name = username
         self.preferences.save_object("username", username)
-
-    def find_username(self, user_id: int) -> str:
-        return "TO DO"
 
     def __del__(self):
         self.socket_message_sender.__del__()
